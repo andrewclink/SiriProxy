@@ -11,10 +11,23 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
   attr_accessor :wants_person, :current_fiber, :firstName, :lastName
   
   def initialize(config)
-    puts "LostFound init in #{Dir.pwd}"
-    puts "-> Initializing ActiveRecord"
-    ActiveRecord::Base.logger = Logger.new('debug.log')
-    ActiveRecord::Base.configurations = YAML::load(File.open("#{SiriProxy::PLUGINS_DIR}/siriproxy-lostfound/database.yml"))
+    puts "Initializing Lost & Found"
+
+    database_config = YAML::load(File.open(File.join(config['path'], "database.yml")))
+    
+    database_config.each do |key, value|
+      puts "Checking #{key}"
+      if value["database"]
+        
+        value["database"] = File.join(config['path'], value["database"])
+
+        puts "-> Found Database #{File.join(Dir.pwd, value["database"])}"
+
+      end
+    end
+    
+    ActiveRecord::Base.logger = Logger.new(File.join(config['path'], 'debug.log'))
+    ActiveRecord::Base.configurations = database_config
     ActiveRecord::Base.establish_connection('development')
     
     load_dependencies

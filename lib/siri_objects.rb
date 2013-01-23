@@ -328,4 +328,11 @@ add_property_to_class(SiriSetRequestOrigin, :direction)
 add_property_to_class(SiriSetRequestOrigin, :age)
 
 
+class SiriPersonSearch < SiriObject
+  def initialize(name="Unknown Person", something=nil)
+    super("PersonSearch", "com.apple.ace.contact")
+    # self.name = name
+  end
+end
 
+add_property_to_class(SiriPersonSearch, :results)

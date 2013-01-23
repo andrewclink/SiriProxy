@@ -4,7 +4,7 @@ class SiriProxy::Plugin < Cora::Plugin
   def initialize(config)
 
   end
-
+  
   def request_completed
     self.manager.send_request_complete_to_iphone
   end
