@@ -2,11 +2,8 @@ require 'optparse'
 require 'yaml'
 require 'ostruct'
 
-# @todo want to make SiriProxy::Commandline without having to
-# require 'siriproxy'. Im sure theres a better way.
-class SiriProxy
-
-end
+# Load Configuration/Cert locations
+load File.dirname(__FILE__) + "/config.rb"
 
 class SiriProxy::CommandLine
   BANNER = <<-EOS
@@ -53,7 +50,15 @@ Options:
         puts "=> #{text}"
       end
       def process(text)
-        super(text)
+        begin
+          result = super(text)
+        rescue Exception => e
+          puts "Exception: #{e.inspect}"
+          puts e.backtrace
+          return "Exception: #{e.inspect}"
+        end
+
+        result 
       end
       def send_request_complete_to_iphone
       end
@@ -139,8 +144,19 @@ Options:
 
   private
   
+  def load_config
+    config_path = File.expand_path(SiriProxy::CONFIG_FILE)
+    unless File.exists?(config_path)
+      raise LoadError.new("Configuration missing - Please create either ~/.siriproxy or /etc/siriproxy.d")
+    end
+
+    $APP_CONFIG = OpenStruct.new(YAML.load_file(config_path))
+    
+  end
+  
   def parse_options
-    $APP_CONFIG = OpenStruct.new(YAML.load_file(File.expand_path('~/.siriproxy/config.yml')))
+    load_config
+    
     @branch = nil
     @option_parser = OptionParser.new do |opts|
       opts.on('-L', '--listen ADDRESS',     '[server]   address to listen on (central or node)') do |listen|

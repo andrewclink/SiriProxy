@@ -26,6 +26,12 @@ class SiriProxy::Plugin::Example < SiriProxy::Plugin
     # - Return nil (or anything not a Hash or false) to have the object forwarded (along with any
     #    modifications made to it)
   end
+  
+  listen_for /crash/i do
+    say "Crashing..."
+    raise StandardError.new
+    request_completed
+  end
 
   listen_for /where am i/i do
     say "Your location is: #{location.address}"

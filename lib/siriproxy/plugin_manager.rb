@@ -47,8 +47,16 @@ class SiriProxy::PluginManager < Cora
   end
 
   def process(text)
-    result = super(text)
+    begin
+      result = super(text)
+    rescue Exception => e
+      log "Exception: #{e.inspect}"
+      log e.backtrace
+      return nil
+    end
+    
     self.guzzoni_conn.block_rest_of_session if result
+
     return result
   end
 
