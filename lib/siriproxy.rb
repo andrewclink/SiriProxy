@@ -19,7 +19,11 @@ class SiriProxy
         proxy = self.new
         proxy.start
 
-        Process.daemon(false, true)
+        STDIN.reopen "/dev/null"
+        STDOUT.reopen "/dev/null", "a" 
+        STDERR.reopen "/dev/null", "a"
+        Process.daemon
+        
 
       end#fork
 
