@@ -10,6 +10,75 @@ end
 
 class SiriProxy
 
+  class << self
+    def start
+
+      childpid = fork do
+        write_pid(Process.pid)
+
+        proxy = self.new
+        proxy.start
+
+        Process.daemon(false, true)
+
+      end#fork
+
+      Process.detach(childpid)
+      Process.exit(0)
+
+    end
+
+    def stop
+      puts "Stopping Echo Server"
+
+      pid = get_child_pid
+      if pid.nil?
+        puts "Server not running."
+        Process.exit(1)
+      end
+
+      File.unlink("/var/run/#{File.basename(__FILE__)}.pid") rescue nil
+      File.unlink("/var/tmp/#{File.basename(__FILE__)}.pid") rescue nil
+
+      puts "Killing server #{pid}"
+      Process.kill("HUP", pid)
+
+    end
+    
+    private
+
+      def write_pid(pid)
+        f = nil
+        pidfile1 = "/var/run/#{File.basename(__FILE__)}.pid"
+        pidfile2 = "/var/tmp/#{File.basename(__FILE__)}.pid"
+
+        raise "Server Already Running" if File.exists?(pidfile1)
+        raise "Server Already Running" if File.exists?(pidfile2)
+
+        begin
+          f = File.open(pidfile1, "w")
+          f.write("#{pid}")
+        rescue
+          f = File.open(pidfile2, "w")
+          f.write("#{pid}")
+        ensure
+          f.close rescue nil
+        end
+      end
+
+
+      def get_child_pid
+        f = nil
+        pid = nil
+
+        f = File.open("/var/run/#{File.basename(__FILE__)}.pid", "r") rescue nil
+        f = File.open("/var/tmp/#{File.basename(__FILE__)}.pid", "r") rescue nil if f.nil?
+
+        pid = f.read().to_i unless f.nil?
+        pid
+      end
+  end
+
   def initialize()
     # @todo shouldnt need this, make centralize logging instead
     $LOG_LEVEL = $APP_CONFIG.log_level.to_i
@@ -17,7 +86,7 @@ class SiriProxy
       begin
         listen = $APP_CONFIG.listen || '127.0.0.1'
         port   = $APP_CONFIG.port   || 443
-        
+
         puts "Starting SiriProxy on #{listen}:#{port}.."
 
         EventMachine::start_server(listen, port, SiriProxy::Connection::Iphone) { |conn|
@@ -35,6 +104,7 @@ class SiriProxy
           raise
         end
       end
-    end
+    end  
   end
+
 end

@@ -87,20 +87,27 @@ Options:
 
   def run_server(subcommand='start')
     load_code
-    start_server
     # @todo: support for forking server into bg and start/stop/restart
     # subcommand ||= 'start'
-    # case subcommand
-    # when 'start'    then start_server
-    # when 'stop'     then stop_server
-    # when 'restart'  then restart_server
-    # end
+    case subcommand
+    when 'start'    then start_server
+    when 'stop'     then stop_server
+    when 'restart'  then restart_server
+    end
   end
 
   def start_server
-    proxy = SiriProxy.new
-    proxy.start()
+    SiriProxy.start
   end
+  
+  def stop_server
+    SiriProxy.stop
+  end
+  
+  def restart_server
+    SiriProxy.restart
+  end
+  
 
   def gen_certs
     ca_name = @ca_name ||= ""

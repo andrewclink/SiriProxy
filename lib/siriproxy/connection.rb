@@ -75,7 +75,7 @@ class SiriProxy::Connection < EventMachine::Connection
   end
 
   def process_compressed_data    
-    self.unzipped_input << unzip_stream.inflate(self.input_buffer)
+    self.unzipped_input << unzip_stream.inflate(self.input_buffer) rescue nil
     self.input_buffer = ""
     puts "========UNZIPPED DATA (from #{self.name} =========" if $LOG_LEVEL > 5
     puts unzipped_input.to_hex if $LOG_LEVEL > 5
