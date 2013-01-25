@@ -4,6 +4,7 @@ require 'ostruct'
 
 # Load Configuration/Cert locations
 load File.dirname(__FILE__) + "/config.rb"
+load File.dirname(__FILE__) + "/color.rb"
 
 class SiriProxy::CommandLine
   BANNER = <<-EOS
@@ -43,24 +44,32 @@ Options:
 
   def run_console
     load_code
-    $LOG_LEVEL = 0 
+    $LOG_LEVEL = 2
     # this is ugly, but works for now
     SiriProxy::PluginManager.class_eval do
       def respond(text, options={})
-        puts "=> #{text}"
+        object = generate_siri_utterance("ref_id", 
+                                          text, 
+                                          (options[:spoken] or text), 
+                                          options[:prompt_for_response] == true)
+        puts Color::Green + "=>#{text}" + Color::Reset
+        puts "-> Object:"
+
+        pp object.to_hash
       end
       def process(text)
         begin
           result = super(text)
         rescue Exception => e
           puts "Exception: #{e.inspect}"
-          puts e.backtrace
+          puts "Backtrace: #{e.backtrace}"
           return "Exception: #{e.inspect}"
         end
 
         result 
       end
       def send_request_complete_to_iphone
+        puts "-> Request Complete"
       end
       def no_matches
         puts "No plugin responded"
@@ -71,13 +80,18 @@ Options:
         0
       end
       def send_object(object, options={:target => :iphone})
-        puts "=> #{object}"
+        if object.is_a?(String)
+          puts "=> #{object}"
+        else
+          pp object.to_hash
+        end
+          
       end
     end
 
     cora = SiriProxy::PluginManager.new
     repl = -> prompt { print prompt; cora.process(gets.chomp!) }
-    loop { repl[">> "] }
+    loop { repl[ Color::Red + ">> " + Color::Reset] }
   end
 
   def run_bundle(subcommand='')

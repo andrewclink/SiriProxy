@@ -27,11 +27,15 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   def initialize_ftdi
     puts "Initializing FTDI"
-    @ftdi = Ftdi::Context.new
-    @ftdi.usb_open(0x0403, 0x6001)
-    @ftdi.set_bitmode(0xff, :bitbang)
+    begin
+      @ftdi = Ftdi::Context.new
+      @ftdi.usb_open(0x0403, 0x6001)
+      @ftdi.set_bitmode(0xff, :bitbang)
 
-    @ftdi.read_data_chunksize= 1
+      @ftdi.read_data_chunksize= 1
+    rescue Ftdi::StatusCodeError => e
+      puts "Could not initialize FTDI context #{e.inspect}"
+    end
 
     #ctx.set_bitmode(0xff, :reset)                                                                                                                                       
     #ctx.usb_close                 
