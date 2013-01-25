@@ -20,10 +20,13 @@ class SiriProxy
       write_pid(Process.pid)
 
       puts "Child pid: #{Process.pid}"
+      puts "Logging to #{($APP_CONFIG.log_file || "/dev/null")}"
 
       STDIN.reopen  "/dev/null"
       STDOUT.reopen ($APP_CONFIG.log_file || "/dev/null"), "a" 
       STDERR.reopen ($APP_CONFIG.log_file || "/dev/null"), "a"
+
+      puts "[====== #{Time.now} Starting Server ======]"
 
       proxy = self.new      
       proxy.start
@@ -44,6 +47,11 @@ class SiriProxy
       puts "Killing server #{pid}"
       Process.kill("HUP", pid)
 
+    end
+    
+    def restart
+      stop
+      start
     end
     
     private

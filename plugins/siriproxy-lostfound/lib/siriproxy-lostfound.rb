@@ -139,21 +139,22 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
 #pragma mark - Development
 
   listen_for /reload (?:the )?lost and found schema/i do
-    say "Reloading schema..."
-    schema = Schema.new
-    schema.down
-    schema.up
-    say "Ok, all set."
-    request_completed
-   end
+  say "Reloading schema..."
+  schema = Schema.new
+  schema.down
+  schema.up
+  say "Ok, all set."
+  request_completed
+  end
 
-   listen_for /reload/i do
-     load_dependencies
-     load __FILE__
-     say "@{tts#\e\\rate=40\\}Whoa, @{tts#\e\\rate=100\\}what just happened there?"
-     request_completed
-   end
-   
+  listen_for /reload/i do
+   load_dependencies
+   load __FILE__
+ 
+   say "@{tts#\e\\rate=40\\}Whoa, @{tts#\e\\rate=100\\}what just happened there?"
+   request_completed
+  end
+
 #pragma mark - Accessors
 
   def fetch_owner(query=:me)
