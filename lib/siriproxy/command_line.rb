@@ -62,7 +62,7 @@ Options:
           result = super(text)
         rescue Exception => e
           puts "Exception: #{e.inspect}"
-          puts "Backtrace: #{e.backtrace}"
+          puts "Backtrace: #{e.backtrace.join("\n")}"
           return "Exception: #{e.inspect}"
         end
 
