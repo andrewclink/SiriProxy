@@ -170,8 +170,23 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     m = word_to_integer(minute) 
     Time.new now.year, now.month, now.day, h, m
   end
+
+  listen_for /turn on the lights at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |hour, minute, period|
+    schedule_lights(hour, minute, period)
+  end
+  listen_for /turn the lights on at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |hour, minute, period|
+    schedule_lights(hour, minute, period)
+  end
   
   listen_for /turn the lights on at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
+    schedule_lights(hour, minute_or_period, period)
+  end
+
+  listen_for /turn on the lights at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
+    schedule_lights(hour, minute_or_period, period)
+  end
+    
+  def schedule_lights(hour, minute_or_period, period)
     minute = 0
     if period.nil?
       if minute_or_period =~ /am|pm/
@@ -203,7 +218,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     Crontab.remove("lights_alarm") rescue nil
     Crontab.Add  :lights_alarm, {:minute=>time.min, :hour=>time.hour, :command=>command}
     
-    say "Ok, I'll turn on the lights at #{time.strftime("%I:%M %P")}, about #{(((time - Time.now) / 3600) * 10).round / 10.0} hours from now."
+    say "Ok, I'll turn on the lights at #{time.strftime("%I:%M %P")}, about #{(((Time.now - time).abs / 3600.0) * 10).round / 10.0} hours from now."
     request_completed
   end
 
