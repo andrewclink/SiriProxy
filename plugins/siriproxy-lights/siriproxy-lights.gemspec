@@ -22,4 +22,5 @@ Gem::Specification.new do |s|
   # s.add_runtime_dependency "rest-client"  
   
   s.add_runtime_dependency "libftdi-ruby"
+  s.add_runtime_dependency "cronedit"
 end

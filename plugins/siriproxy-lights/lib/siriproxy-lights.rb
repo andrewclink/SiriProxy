@@ -6,6 +6,7 @@ require 'socket'
 require 'fileutils'
 require 'rubygems'
 require 'ftdi'
+require 'cronedit'
 
 #######
 # This is a "hello world" style plugin. It simply intercepts the phrase "test siri proxy" and responds
@@ -16,6 +17,7 @@ require 'ftdi'
 ######
 
 class SiriProxy::Plugin::Lights < SiriProxy::Plugin
+  include CronEdit
   
   attr_accessor :wants_person, :current_fiber, :firstName, :lastName
   
@@ -135,11 +137,80 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
 #pragma mark - Lights
 
-  listen_for /test project/i do
-    say "Ok, FTDI: #{@ftdi}"
+## Scheduling
+
+  def word_to_integer(word)
+    result = case word
+    when /\d+?/             then word.to_i
+    when nil                then 0
+    when /o?\'?clock/       then 0
+    when /one/i             then 1
+    when /two|to|too/       then 2
+    when /th|tree/          then 
+      word =~ /y$/ ? 30 : 3
+    when /four|pour|poor/   then 4
+    when /five/             then 5
+    when /six|sex|sick/     then 6
+    when /se/               then 7
+    when /eight|ate/        then 8
+    when /nine/             then 9
+    when /ten/              then 10
+    when /eleven/           then 11
+    when /twelve/           then 12
+    else 
+      0
+    end
+    puts "-> Converting #{word} to integer... Got #{result}"
+    return result
+  end
+
+  def parse_time(hour, minute, period)
+    now = Time.now
+    h = word_to_integer(hour) + (period =~ /pm/ ? 12 : 0)
+    m = word_to_integer(minute) 
+    Time.new now.year, now.month, now.day, h, m
+  end
+  
+  listen_for /turn the lights on at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
+    minute = 0
+    if period.nil?
+      if minute_or_period =~ /am|pm/
+        # Didn't give a minute
+        period = minute_or_period
+        minute = 0
+      else
+        # Didn't give a period; must be assumed
+        minute = minute_or_period
+      end
+    else
+      # "five thirty am"
+      # period is set.
+      minute = minute_or_period
+    end
+    
+    ## Parse time.
+    time = parse_time(hour, minute, period)
+    
+    ## Infer period
+    if period.nil?
+      while time <= Time.now do
+        time = time + (12 * 3600) #Add 12 hours
+      end
+    end
+    
+    # schedule
+    command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights on"
+    Crontab.remove("lights_alarm") rescue nil
+    Crontab.Add  :lights_alarm, {:minute=>time.min, :hour=>time.hour, :command=>command}
+    
+    say "Ok, I'll turn on the lights at #{time.strftime("%I:%M %P")}, about #{(((time - Time.now) / 3600) * 10).round / 10.0} hours from now."
     request_completed
   end
 
+  listen_for /test lights/i do
+    say "Lights available, context: #{@ftdi}"
+    request_completed
+  end
   
   def handle_lights(state, where)
     begin
@@ -200,8 +271,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     handle_lights(state, where)
   end
 
-  listen_for /blink the lights?/i do
-
+  listen_for Regexp.new(/blink the lights?/i) do
     say "Blinking!"
     request_completed
 
@@ -213,5 +283,6 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
     
   end
-      
+  
+
 end
