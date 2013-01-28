@@ -277,12 +277,12 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
     
     # schedule
-    job_name = "lights_alarm_#{state}"
+    job_name = "lights_alarm_#{onoff}"
     command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
     Crontab.Remove(job_name) rescue nil
     Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
     
-    say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, about #{(((Time.now - time).abs / 3600.0) * 10).round / 10.0} hours from now."
+    say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, #{distance_of_time_in_words(Time.now, time)} from now."
     request_completed
   end
 
