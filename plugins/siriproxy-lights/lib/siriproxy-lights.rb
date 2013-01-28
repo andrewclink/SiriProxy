@@ -216,7 +216,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   #######################################################
   
     
-  listen_for %r|when will the lights turn (on|off)|i do |state|
+  listen_for(/when will the lights turn (on|off)/i) do |state|
     jobs = Crontab.List()
     job_def  = jobs["lights_alarm_#{state}"]
 
