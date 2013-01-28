@@ -141,6 +141,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   def word_to_integer(word)
     result = case word
+    when Integer            then word
     when /\d+?/             then word.to_i
     when nil                then 0
     when /o?\'?clock/       then 0
@@ -160,7 +161,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     else 
       0
     end
-    puts "-> Converting #{word} to integer... Got #{result}"
+    puts "-> Converting #{word.inspect} to integer... Got #{result} (to_i: #{word.to_i})"
     return result
   end
 
@@ -171,13 +172,40 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     Time.new now.year, now.month, now.day, h, m
   end
 
-  listen_for /turn on the lights at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |hour, minute, period|
-    schedule_lights(hour, minute, period)
+  listen_for /turn (on|off) the lights at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |state, hour, minute, period|
+    schedule_lights(hour, minute, period, state)
   end
-  listen_for /turn the lights on at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |hour, minute, period|
-    schedule_lights(hour, minute, period)
+  listen_for /turn the lights (on|off) at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |state, hour, minute, period|
+    schedule_lights(hour, minute, period, state)
+  end
+
+  # # # #
+  listen_for(/turn (on|off) the lights in (\d+|\w+) minutes/i) do |state, delta|
+    time = Time.now + (word_to_integer(delta) * 60)
+    schedule_lights(time.hour, time.min, "am", state) #passing am because time will be in 24 hour time already.
+  end
+  listen_for(/turn the lights (on|off) in (\d+|\w+) minutes/i) do |state, delta|
+    time = Time.now + (word_to_integer(delta) * 60)
+    schedule_lights(time.hour, time.min, "am", state) #passing am because time will be in 24 hour time already.
   end
   
+  # # # #
+  listen_for(/don't turn the lights (on|off)/i) do |state|
+    job_name = "lights_alarm_#{state}"
+    Crontab.Remove(job_name)
+    say "Ok, I won't turn the lights #{state}"
+    request_completed
+  end
+  
+  listen_for(/don't turn (on|off) the lights/i) do |state|
+    job_name = "lights_alarm_#{state}"
+    Crontab.Remove(job_name)
+    say "Ok, I won't be turning #{state} the lights"
+    request_completed
+  end
+  
+  
+  ## Not likely to happen, but possible and work fine. ##
   listen_for /turn the lights on at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
     schedule_lights(hour, minute_or_period, period)
   end
@@ -185,8 +213,43 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   listen_for /turn on the lights at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
     schedule_lights(hour, minute_or_period, period)
   end
+  #######################################################
+  
     
-  def schedule_lights(hour, minute_or_period, period)
+  listen_for %r|when will the lights turn on|i do
+    jobs = Crontab.List()
+    job_def  = jobs["lights_alarm"]
+
+
+    begin
+       entry = CronEntry.new(job_def).to_hash
+    rescue
+      say "The lights aren't scheduled to turn on."
+      request_completed
+      return
+    end
+
+    #
+    # Convert time from 24 to 12 hour & determine the period
+    hour = entry[:hour].to_i
+    period = "am"
+    if hour == 12
+      period = "pm"
+    elsif hour == 0
+      hour = 12
+      period = "am"
+    elsif hour > 12
+      hour -= 12 
+      period = "pm"
+    end
+    
+    time = sprintf("%d:%02d %s", hour, entry[:minute], period)
+    
+    say "The lights will be turned on at #{time}."
+    request_completed
+  end
+    
+  def schedule_lights(hour, minute_or_period, period, onoff="on")
     minute = 0
     if period.nil?
       if minute_or_period =~ /am|pm/
@@ -214,11 +277,12 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
     
     # schedule
-    command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights on"
-    Crontab.remove("lights_alarm") rescue nil
-    Crontab.Add  :lights_alarm, {:minute=>time.min, :hour=>time.hour, :command=>command}
+    job_name = "lights_alarm_#{state}"
+    command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
+    Crontab.Remove(job_name) rescue nil
+    Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
     
-    say "Ok, I'll turn on the lights at #{time.strftime("%I:%M %P")}, about #{(((Time.now - time).abs / 3600.0) * 10).round / 10.0} hours from now."
+    say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, about #{(((Time.now - time).abs / 3600.0) * 10).round / 10.0} hours from now."
     request_completed
   end
 
