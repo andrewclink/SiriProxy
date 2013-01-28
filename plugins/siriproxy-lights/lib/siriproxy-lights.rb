@@ -216,15 +216,15 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   #######################################################
   
     
-  listen_for %r|when will the lights turn on|i do
+  listen_for %r|when will the lights turn (on|off)|i do |state|
     jobs = Crontab.List()
-    job_def  = jobs["lights_alarm"]
+    job_def  = jobs["lights_alarm_#{state}"]
 
 
     begin
        entry = CronEntry.new(job_def).to_hash
     rescue
-      say "The lights aren't scheduled to turn on."
+      say "The lights aren't scheduled to turn #{state}."
       request_completed
       return
     end
@@ -245,7 +245,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     
     time = sprintf("%d:%02d %s", hour, entry[:minute], period)
     
-    say "The lights will be turned on at #{time}."
+    say "The lights will be turned #{state} at #{time}."
     request_completed
   end
     
