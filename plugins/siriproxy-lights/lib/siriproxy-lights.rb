@@ -55,6 +55,22 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       @bedroom_lights = dev.dimmers[1]
     end
   end
+  
+  def desk_lamp
+    if @desk_lamp.nil?
+      initialize_dimmer
+    end
+
+    @desk_lamp
+  end
+  
+  def bedroom_lights
+    if @bedroom_lights.nil?
+      initialize_dimmer
+    end
+    
+    @bedroom_lights
+  end
 #pragma mark - Lights
 
 ## Scheduling
@@ -171,9 +187,9 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   
   def dimmer_for(place)
     dimmer = case place
-    when "desk" then @desk_lamp
-    when /bed ?room/ then @bedroom_lights
-    else @bedroom_lights
+    when "desk" then desk_lamp
+    when /bed ?room/ then bedroom_lights
+    else bedroom_lights
     end
     
     puts "-> Dimmer for #{place} is #{dimmer}"
@@ -183,13 +199,13 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   def infer_dim_for(dimmer)
     target_value = case Time.now.hour
-    when 0..6    then 75
-    when 7..9    then 100
-    when 10..16  then 150
-    when 17..18  then 110
-    when 19      then 90
-    when 20      then 80
-    when 21..24  then 60
+    when 0..6    then 85
+    when 7..9    then 110
+    when 10..16  then 160
+    when 17..18  then 120
+    when 19      then 100
+    when 20      then 90
+    when 21..24  then 80
     else 128
     end
     
