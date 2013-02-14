@@ -118,10 +118,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   # # # # 
   
   listen_for(/how high (?:are|is) (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place, thing|
-    value = dimmer_for(place).value
-    value = value.to_f / 255.0 * 100
-    value = value.round
-    
+    value = dimmers_for(place).value.round
+
     say "#{value}%"
     request_completed
   end
