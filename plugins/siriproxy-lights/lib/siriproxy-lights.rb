@@ -45,7 +45,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     #ctx.usb_close                 
   end
 
-  AVAILABLE_DIMMERS = "(desk|bed ?room)? ?(lamp|lights|light)"
+  AVAILABLE_DIMMERS = "(all|desk|bed ?room)? ?(?:the )?(lamp|lights|light)"
 
   def initialize_dimmer
     dev = DimmerDevice.new
@@ -117,7 +117,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   
   # # # # 
   
-  listen_for(/how high (?:are|is) (?:the|my|our) #{AVAILABLE_DIMMERS}/i) do |place, thing|
+  listen_for(/how high (?:are|is) (?:the|my|our)? #{AVAILABLE_DIMMERS}/i) do |place, thing|
     value = dimmer_for(place).value
     value = value.to_f / 255.0 * 100
     value = value.round
@@ -126,9 +126,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  listen_for(/set (?:my|the|our) #{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
-    dimmer = dimmer_for(place)
-    
+  listen_for(/set (?:my|the|our)? #{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
     value = case percentage
     when /\d+/ then
       value = percentage.to_i / 100.0 * 255.0
@@ -140,46 +138,71 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       percentage = "0%"
     else 0
     end
-    
     puts "Percentage: #{percentage.inspect} -> value"
-    dimmer.fade(:value => value.round, :duration => 360) # 3 seconds
     
-    say "Fading the #{place} #{thing} to #{percentage}%"
+    dimmers = dimmers_for(place)
+    dimmers.fade(:value => value.round, :duration => 360) # 3 seconds
+
+    if (dimmers.length > 1)
+      say "Fading them to #{percentage}%"
+    else
+      say "Fading the #{place} #{thing} to #{percentage}%"
+    end
+
     request_completed
   end
   
 
-  listen_for(/dim (?:the|my|our) #{AVAILABLE_DIMMERS}/i) do |place, thing|
-    dimmer = dimmer_for(place)
-    if dimmer.value < 5
-      say "The #{place} lights are already down all the way."
+  listen_for(/dim (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place, thing|
+    dimmers = dimmers_for(place)
+
+    
+    # Single Dimmer
+    #
+    if dimmers.length == 1
+      if dimmers[0].value < 5
+        say "The #{place} lights are already down all the way."
+      else
+        infer_dim_for dimmers[0]
+        say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
+      end
+
       request_completed
       return
     end
     
-    infer_dim_for dimmer_for(place)
+    # Multiple dimmers
+    #
+    dimmers.each do |dimmer|
+      infer_dim_for dimmer
+    end
 
-    say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
+    say "Setting the mood"
     request_completed
   end
 
   
-  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our) #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
-    dimmer = dimmer_for(place)
+  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our)? #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
+    dimmers = dimmers_for(place)
     
-    if dimmer.value >= 255
-      say "The #{place} lights are already at 100%"
-      request_completed
-      return
+    
+    if dimmers.length == 1
+      if dimmers[0].value >= 255
+        say "The #{place} lights are already at 100%"
+        request_completed
+        return
+      end
     end
 
-    value = case amount
-    when /all/ then 255
-    when /little|bit/ then dimmer.value + 10
-    else dimmer.value + 25
-    end
+    dimmers.each do | dimmer |
+      value = case amount
+      when /all/ then 255
+      when /little|bit/ then dimmer.value + 10
+      else dimmer.value + 25
+      end
 
-    dimmer.fade(:value => value, :duration => 120) # 1 second
+      dimmer.fade(:value => value, :duration => 120) # 1 second
+    end
     
     say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} up a bit"
     request_completed
@@ -195,6 +218,25 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     puts "-> Dimmer for #{place} is #{dimmer}"
     
     dimmer
+  end
+  
+  def dimmers_for(place)
+    
+    dimmers = DimmerCollection.new
+    
+    case place
+    when "desk" then
+      dimmers << desk_lamp
+    when /bed ?room/ then 
+      dimmers << bedroom_lights
+    when /all/ then 
+      dimmers << desk_lamp
+      dimmers << bedroom_lights
+    else 
+      dimmers << bedroom_lights
+    end
+
+    dimmers
   end
 
   def infer_dim_for(dimmer)
@@ -477,6 +519,14 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   listen_for(/turn (?:my|the|our) (lights|bedroom lights|desk lamp|desk light) (on|off)/i) do |where, state|
     handle_lights(state, where)
   end
+
+  listen_for(/turn (on|off) all the lights?/i) do |state|
+    handle_lights(state, "all")
+  end
+  listen_for(/turn all the lights? (on|off)/i) do |state|
+    handle_lights(state, "all")
+  end
+
 
   listen_for(/blink the lights?/i) do
     say "Blinking!"

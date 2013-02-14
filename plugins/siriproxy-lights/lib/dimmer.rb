@@ -181,7 +181,24 @@ class Dimmer
   def to_s
     "#<#{self.class}:#{index} value=#{value}>"
   end
-  
 end
 
+
+class DimmerCollection < Array
+
+  ## Returns average value
+  def value
+    self.inject{|sum, dimmer| sum + dimmer.value }.to_f / self.count
+  end
+
+  ## Attempts to return an array of return values
+  def method_missing(method, *args)
+    return super(method, *args) unless Dimmer.instance_methods.include?(method)
+
+    self.collect do |dimmer|
+      dimmer.call(method, &args)
+    end
+  end
+  
+end
 
