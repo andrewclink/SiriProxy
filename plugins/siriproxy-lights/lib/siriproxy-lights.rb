@@ -329,6 +329,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     # schedule
     job_name = nil
     command  = nil
+    call_before = 0
 
     if false
       job_name = "lights_alarm_#{onoff}"
@@ -336,8 +337,10 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     else
       
       dimmer_index = 1
+      call_before  = (onoff == "on" ? 9 : 5)
       
       job_name = "lights_alarm_#{onoff}"
+      
       
       args =  []
       args << "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy"
@@ -345,13 +348,13 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       args << "fade"
       args << dimmer_index
       args << (onoff == "on" ? 255 : 0)   # Value
-      args << (onoff == "on" ? 120 * 60 * 30 : 120 * 60 * 5) # duration 30min : 5min
+      args << (onoff == "on" ? 120 * 60 * 9 : 120 * 60 * 5) # duration 9min : 5min
       
       command = args.collect(&:to_s).join(" ")
     end
   
     Crontab.Remove(job_name) rescue nil
-    Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
+    Crontab.Add  job_name, {:minute=>time.min - call_before, :hour=>time.hour, :command=>command}
     
     say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, #{distance_of_time_in_words(Time.now, time)} from now."
     request_completed
