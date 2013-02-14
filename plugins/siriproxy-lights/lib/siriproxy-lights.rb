@@ -110,18 +110,29 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  listen_for(/set (?:my|the|our) #{AVAILABLE_DIMMERS} to (\d+)%/i) do |place, thing, percentage|
+  listen_for(/set (?:my|the|our) #{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
     dimmer = dimmer_for(place)
     
-    puts "Percentage: #{percentage.inspect}"
-    value = percentage.to_i / 100.0 * 255.0
+    value = case percentage
+    when /\d+/ then
+      value = percentage.to_i / 100.0 * 255.0
+    when /max/i then
+      value = 255
+      percentage = "100%"
+    when /min/i then
+      value = 0
+      percentage = "0%"
+    else 0
+    end
     
-    dimmer.fade(:value => value.round, :duration => 120)
+    puts "Percentage: #{percentage.inspect} -> value"
+    dimmer.fade(:value => value.round, :duration => 360) # 3 seconds
     
     say "Fading the #{place} #{thing} to #{percentage}%"
     request_completed
   end
   
+
   listen_for(/dim (?:the|my|our) #{AVAILABLE_DIMMERS}/i) do |place, thing|
     dimmer = dimmer_for(place)
     if dimmer.value < 5
@@ -135,6 +146,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
     request_completed
   end
+
   
   listen_for(/(?:bring|fade)(?: up)? (?:the|my|our) #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
     dimmer = dimmer_for(place)
@@ -163,6 +175,10 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     when /bed ?room/ then @bedroom_lights
     else @bedroom_lights
     end
+    
+    puts "-> Dimmer for #{place} is #{dimmer}"
+    
+    dimmer
   end
 
   def infer_dim_for(dimmer)
@@ -181,9 +197,10 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     
     if target_value <= dimmer.value
       target_value = dimmer.value - 10
+      puts "Target value too high; adjusting downward: #{target_value}"
     end
     
-    dimmer.fade(:value => target_value, :duration => 240) # 2 seconds
+    dimmer.fade(:value => target_value, :duration => 360) # 3 seconds
   end
   
   # # # #
