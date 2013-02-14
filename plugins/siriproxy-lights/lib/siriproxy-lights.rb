@@ -327,8 +327,17 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
     
     # schedule
-    job_name = "lights_alarm_#{onoff}"
-    command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
+    job_name = nil
+    command  = nil
+
+    if false
+      job_name = "lights_alarm_#{onoff}"
+      command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
+    else
+      job_name = "lights_alarm_#{onoff}"
+      command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
+    end
+  
     Crontab.Remove(job_name) rescue nil
     Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
     
@@ -337,8 +346,37 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
 
-  
+  ## Returns a symbol for a boolean state of on or off
+
+
   def handle_lights(state, where)
+    dimmer = dimmer_for(where)
+    if dimmer.nil?
+      say "I don't know about #{where}"
+      request_completed
+      return
+    end
+    
+    current = dimmer.state
+    
+    if (onoff == "on"  && current == :on) ||
+       (onoff == "off" && current == :off)
+       
+       say "The lights are already #{onoff}"
+       request_completed
+       return
+    end
+      
+    
+    dimmer.value = (onoff == "on" ? 255 : 0)
+    
+    say "Lights #{onoff}"
+    request_completed
+      
+  end
+
+  
+  def handle_relay(state, where)
     begin
     data    = (state===true || state == "on") ? 0xff : 0x00
     current = @ftdi.read_pins
@@ -368,6 +406,24 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
   listen_for /(?:are the|is the)( bedroom)? lights? (on|off)/i do |where, state|
+    dimmer = dimmer_for(where)
+    if dimmer.nil?
+      say "I don't know about #{where}"
+      request_completed
+      return
+    end
+    
+    is_on = dimmer.state == :on || dimmer.state == :faded
+    
+    negate = state == 'off'
+    printf("Negating? %s\n", negate ? "Yes" : "No");
+    say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} lights are #{is_on ? 'on' : 'off'}"
+    request_completed
+    
+  end
+
+
+  listen_for /RELAY (?:are the|is the)( bedroom)? lights? (on|off)/i do |where, state|
     current = @ftdi.read_pins
 
     printf "Pins currently: 0x%x; will test for 0x%x & 0x%x == 0x%x\n", current, current, 0xff, current & 0xff

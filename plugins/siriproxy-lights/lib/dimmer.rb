@@ -164,6 +164,19 @@ class Dimmer
     device.fade_dimmer(index, val, dur)
   end
   
+  def state
+    current = nil
+    if dimmer.value > 200
+      current = :on
+    elsif dimmer.value < 100
+      current = :off
+    else
+      current = :faded
+    end
+    
+    current
+  end
+  
   
   def to_s
     "#<#{self.class}:#{index} value=#{value}>"
