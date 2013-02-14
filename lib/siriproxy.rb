@@ -55,19 +55,34 @@ class SiriProxy
     end
     
     private
+    
+      def process_exists?(pid)
+        begin
+          Process.getpgid( pid )
+          true
+        rescue Errno::ESRCH
+          false
+        end
+      end
 
       def write_pid(pid)
         f = nil
         pidfile1 = "/var/run/#{File.basename(__FILE__)}.pid"
         pidfile2 = "/var/tmp/#{File.basename(__FILE__)}.pid"
 
-        raise "Server Already Running" if File.exists?(pidfile1)
-        raise "Server Already Running" if File.exists?(pidfile2)
+        if File.exists?(pidfile1)
+          raise "Server Already Running" if process_exists?(File.read(pidfile1).to_i)
+          File.unlink(pidfile1)
+        elsif File.exists?(pidfile1)
+          raise "Server Already Running" if process_exists?(File.read(pidfile2).to_i)
+          File.unlink(pidfile2)
+        end
 
         begin
           f = File.open(pidfile1, "w")
           f.write("#{pid}")
         rescue
+          # Didn't have permissions to write to /var/run
           f = File.open(pidfile2, "w")
           f.write("#{pid}")
         ensure
