@@ -467,11 +467,11 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
 
-  listen_for /turn (on|off) the(bedroom)? light(?:s)?/i do |state, where|
+  listen_for(/turn (on|off) (?:my|the|our) (lights|bedroom lights|desk lamp|desk light)/i) do |state, where|
     handle_lights(state, where)
   end
 
-  listen_for(/turn the(bedroom)? lights? (on|off)/i) do |where, state|
+  listen_for(/turn (?:my|the|our) (lights|bedroom lights|desk lamp|desk light) (on|off)/i) do |where, state|
     handle_lights(state, where)
   end
 
