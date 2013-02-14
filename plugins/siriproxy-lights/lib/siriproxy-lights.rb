@@ -122,7 +122,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  listen_for(/dim (?:the|my|our) #{AVAILABLE_DIMMERS}/) do |place, thing|
+  listen_for(/dim (?:the|my|our) #{AVAILABLE_DIMMERS}/i) do |place, thing|
     dimmer = dimmer_for(place)
     if dimmer.value < 5
       say "The #{place} lights are already down all the way."
@@ -136,7 +136,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our) #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/) do |place, thing, amount|
+  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our) #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
     dimmer = dimmer_for(place)
     
     if dimmer.value >= 255
