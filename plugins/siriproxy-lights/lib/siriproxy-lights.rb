@@ -353,8 +353,11 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       command = args.collect(&:to_s).join(" ")
     end
   
+    minute = time.min - call_before
+    minute = 0 if minute < 0
+  
     Crontab.Remove(job_name) rescue nil
-    Crontab.Add  job_name, {:minute=>time.min - call_before, :hour=>time.hour, :command=>command}
+    Crontab.Add  job_name, {:minute=>minute, :hour=>time.hour, :command=>command}
     
     say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, #{distance_of_time_in_words(Time.now, time)} from now."
     request_completed
