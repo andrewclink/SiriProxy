@@ -361,7 +361,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   ## Returns a symbol for a boolean state of on or off
 
 
-  def handle_lights(state, where)
+  def handle_lights(state=:on, where)
     dimmer = dimmer_for(where)
     if dimmer.nil?
       say "I don't know about #{where}"
@@ -369,19 +369,25 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       return
     end
     
+    state   = case state
+    when :on then :on
+    when "on" then :on
+    else :off
+    end
+
     current = dimmer.state
     
-    if (onoff == "on"  && current == :on) ||
-       (onoff == "off" && current == :off)
+    if (state == :on  && current == :on) ||
+       (state == :off && current == :off)
        
-       say "The lights are already #{onoff}"
+       say "The lights are already #{state}"
        request_completed
        return
     end
       
     
     # dimmer.value = (onoff == "on" ? 255 : 0)
-    dimmer.fade :value => (onoff == "on" ? 255 : 0), :duration => 240
+    dimmer.fade :value => (state == "on" ? 255 : 0), :duration => 240
     
     say "Lights #{onoff}"
     request_completed
