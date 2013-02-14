@@ -182,7 +182,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
   
-  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our)? #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
+  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our)? ?#{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
     dimmers = dimmers_for(place)
     
     
@@ -437,7 +437,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     # dimmer.value = (onoff == "on" ? 255 : 0)
     dimmer.fade :value => (state == "on" ? 255 : 0), :duration => 240
     
-    say "Lights #{onoff}"
+    say "Lights #{state}"
     request_completed
       
   end
