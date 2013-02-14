@@ -195,8 +195,10 @@ class DimmerCollection < Array
   def method_missing(method, *args)
     return super(method, *args) unless Dimmer.instance_methods.include?(method)
 
+    puts "Applying #{method.inspect} to dimmers:"
     self.collect do |dimmer|
-      dimmer.call(method, &args)
+      
+      dimmer.send(method, *args)
     end
   end
   
