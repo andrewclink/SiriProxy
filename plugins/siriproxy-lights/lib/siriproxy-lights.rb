@@ -342,8 +342,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       args =  []
       args << "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy"
       args << "/usr/local/siriproxy/plugins/siriproxy-lights/bin/dim"
-      args << dimmer_index
       args << "fade"
+      args << dimmer_index
       args << (onoff == "on" ? 255 : 0)   # Value
       args << (onoff == "on" ? 120 * 60 * 30 : 120 * 60 * 5) # duration 30min : 5min
       
