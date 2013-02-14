@@ -121,7 +121,7 @@ class DimmerDevice
   
   def fade_dimmer(index, value, duration)
     
-    if value > 255
+      if value > 255
       value = 255
     end
 
@@ -197,6 +197,7 @@ class DimmerCollection < Array
 
     puts "Applying #{method.inspect} to dimmers: #{self}"
     self.collect do |dimmer|
+      puts "-> dimmer.send(#{method.inspect}, #{args.inspect})"
       dimmer && dimmer.send(method, *args)
     end
   end
