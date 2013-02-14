@@ -187,8 +187,8 @@ end
 class DimmerCollection < Array
 
   ## Returns average value
-  def value
-    self.inject{|sum, dimmer| sum + dimmer.value }.to_f / self.count
+  def average_value
+    self.inject(0) {|sum, dimmer| sum + dimmer.value }.to_f / self.count
   end
 
   ## Attempts to return an array of return values

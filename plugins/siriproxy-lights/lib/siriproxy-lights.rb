@@ -118,9 +118,17 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   # # # # 
   
   listen_for(/how high (?:are|is) (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place, thing|
-    value = dimmers_for(place).value.round
-
-    say "#{value}%"
+  
+    add_views = SiriAddViews.new
+    add_views.make_root(last_ref_id)
+    
+    dimmers_for(place).each do |dimmer|
+      value = (dimmer.value.to_f / 255.0).round
+      utterance = SiriAssistantUtteranceView.new("Lamp #{dimmer.index} is at #{value}%")
+      add_views.views << utterance
+    end
+    
+    send_object add_views
     request_completed
   end
   
