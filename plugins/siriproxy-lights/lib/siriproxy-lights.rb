@@ -111,13 +111,13 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   # # # #
 
   listen_for /test lights/i do
-    say "Lights available, context: #{@ftdi}"
+    say "Lights available: desk lamp, bedroom lights."
     request_completed
   end
   
   # # # # 
   
-  listen_for(/how high (?:are|is) (?:the|my|our)? #{AVAILABLE_DIMMERS}/i) do |place, thing|
+  listen_for(/how high (?:are|is) (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place, thing|
     value = dimmer_for(place).value
     value = value.to_f / 255.0 * 100
     value = value.round
@@ -126,7 +126,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  listen_for(/set (?:my|the|our)? #{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
+  listen_for(/set (?:my|the|our)? ?#{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
     value = case percentage
     when /\d+/ then
       value = percentage.to_i / 100.0 * 255.0
