@@ -166,9 +166,9 @@ class Dimmer
   
   def state
     current = nil
-    if dimmer.value > 200
+    if self.value > 200
       current = :on
-    elsif dimmer.value < 100
+    elsif self.value < 100
       current = :off
     else
       current = :faded
