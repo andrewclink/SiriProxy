@@ -417,11 +417,14 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       return
     end
     
+    puts "Requested: #{state.inspect}"
     state   = case state
-    when :on then :on
-    when "on" then :on
+    when :on  then :on
+    when /on/ then :on
     else :off
     end
+    
+    puts "    State: #{state.inspect}"
 
     # dimmers.each do |dimmer|
     #   current = dimmer.state
