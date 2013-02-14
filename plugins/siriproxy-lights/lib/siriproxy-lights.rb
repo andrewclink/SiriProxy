@@ -380,7 +380,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
       
     
-    dimmer.value = (onoff == "on" ? 255 : 0)
+    # dimmer.value = (onoff == "on" ? 255 : 0)
+    dimmer.fade :value => (onoff == "on" ? 255 : 0), :duration => 240
     
     say "Lights #{onoff}"
     request_completed
