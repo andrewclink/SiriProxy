@@ -225,7 +225,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     dimmers = DimmerCollection.new
     
     case place
-    when "desk" then
+    when /desk/ then
       dimmers << desk_lamp
     when /bed ?room/ then 
       dimmers << bedroom_lights
@@ -411,6 +411,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   def handle_lights(state=:on, where)
     dimmers = dimmers_for(where)
+
     if dimmers.length < 1
       say "I don't know about #{where} lights"
       request_completed
