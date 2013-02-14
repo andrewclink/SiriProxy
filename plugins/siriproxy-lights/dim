@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "lib"))
+require "dimmer"
+
+# Usage: dimmer.rb <set | fade | fade_sw> <index> <value> [duration]
+cmd   = ARGV[0]
+index = ARGV[1].to_i || 0
+
+device = DimmerDevice.new
+device.open
+# puts "Found #{device.dimmer_count} dimmers"
+# puts "-> #{device.dimmers.inspect}"
+
+dimmer = device.dimmers[index]
+puts "Dimmer: #{dimmer || "Not Found"}"
+exit 1 if dimmer.nil?
+
+if cmd =~ /set/
+  value = ARGV[2].to_i || 128
+
+  puts "Setting value: #{value}"
+  dimmer.value = value
+
+  puts "Dimmer: #{dimmer}"
+
+  device.close
+  exit 0
+end
+
+if cmd =~ /fade_sw/
+
+  value = ARGV[2].to_i || 128
+
+  delta = dimmer.value > value ? -1 : 1 # Going up or down?
+
+  while dimmer.value != value
+    dimmer.value += delta
+    sleep(0.1)
+  end
+
+  device.close
+end
+
+if cmd =~ /fade/
+  value = ARGV[2].to_i
+  duration = ARGV[3].to_i
+  
+  puts "Fading to: #{value} over #{duration} ticks"
+  
+  dimmer.fade(:value => value, :duration => duration)
+
+  puts "Dimmer: #{dimmer}"
+  device.close
+end

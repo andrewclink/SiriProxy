@@ -8,6 +8,8 @@ require 'rubygems'
 require 'ftdi'
 require 'cronedit'
 
+require 'dimmer'
+
 #######
 # This is a "hello world" style plugin. It simply intercepts the phrase "test siri proxy" and responds
 # with a message about the proxy being up and running (along with a couple other core features). This
@@ -24,7 +26,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   def initialize(config)
     #if you have custom configuration options, process them here!
     initialize_ftdi
-    
+    initialize_dimmer
   end
 
   def initialize_ftdi
@@ -43,7 +45,16 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     #ctx.usb_close                 
   end
 
+  AVAILABLE_DIMMERS = "(desk|bed ?room)? ?(lamp|lights|light)"
 
+  def initialize_dimmer
+    dev = DimmerDevice.new
+    if dev
+      dev.open
+      @desk_lamp      = dev.dimmers[0]
+      @bedroom_lights = dev.dimmers[1]
+    end
+  end
 #pragma mark - Lights
 
 ## Scheduling
@@ -81,10 +92,101 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     Time.new now.year, now.month, now.day, h, m
   end
 
+  # # # #
+
   listen_for /test lights/i do
     say "Lights available, context: #{@ftdi}"
     request_completed
   end
+  
+  # # # # 
+  
+  listen_for(/how high (?:are|is) (?:the|my|our) #{AVAILABLE_DIMMERS}/i) do |place, thing|
+    value = dimmer_for(place).value
+    value = value.to_f / 255.0 * 100
+    value = value.round
+    
+    say "#{value}%"
+    request_completed
+  end
+  
+  listen_for(/set (?:my|the|our) #{AVAILABLE_DIMMERS} to (\d+)%/i) do |place, thing, percentage|
+    dimmer = dimmer_for(place)
+    
+    puts "Percentage: #{percentage.inspect}"
+    value = percentage.to_i / 100.0 * 255.0
+    
+    dimmer.fade(:value => value.round, :duration => 120)
+    
+    say "Fading the #{place} #{thing} to #{percentage}%"
+    request_completed
+  end
+  
+  listen_for(/dim (?:the|my|our) #{AVAILABLE_DIMMERS}/) do |place, thing|
+    dimmer = dimmer_for(place)
+    if dimmer.value < 5
+      say "The #{place} lights are already down all the way."
+      request_completed
+      return
+    end
+    
+    infer_dim_for dimmer_for(place)
+
+    say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
+    request_completed
+  end
+  
+  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our) #{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/) do |place, thing, amount|
+    dimmer = dimmer_for(place)
+    
+    if dimmer.value >= 255
+      say "The #{place} lights are already at 100%"
+      request_completed
+      return
+    end
+
+    value = case amount
+    when /all/ then 255
+    when /little|bit/ then dimmer.value + 10
+    else dimmer.value + 25
+    end
+
+    dimmer.fade(:value => value, :duration => 120) # 1 second
+    
+    say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} up a bit"
+    request_completed
+  end
+  
+  def dimmer_for(place)
+    dimmer = case place
+    when "desk" then @desk_lamp
+    when /bed ?room/ then @bedroom_lights
+    else @bedroom_lights
+    end
+  end
+
+  def infer_dim_for(dimmer)
+    target_value = case Time.now.hour
+    when 0..6    then 75
+    when 7..9    then 100
+    when 10..16  then 150
+    when 17..18  then 110
+    when 19      then 90
+    when 20      then 80
+    when 21..24  then 60
+    else 128
+    end
+    
+    puts "Target value: #{target_value}"
+    
+    if target_value <= dimmer.value
+      target_value = dimmer.value - 10
+    end
+    
+    dimmer.fade(:value => target_value, :duration => 240) # 2 seconds
+  end
+  
+  # # # #
 
   listen_for /turn (on|off) the lights at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |state, hour, minute, period|
     schedule_lights(hour, minute, period, state)
@@ -104,6 +206,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
   
   # # # #
+  
   listen_for(/don't turn the lights (on|off)/i) do |state|
     job_name = "lights_alarm_#{state}"
     Crontab.Remove(job_name)
