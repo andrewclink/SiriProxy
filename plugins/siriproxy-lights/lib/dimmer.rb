@@ -158,8 +158,8 @@ class Dimmer
   end
   
   def fade(args={})
-    val = args.delete :value
-    dur = args.delete :duration
+    val = args[:value]
+    dur = args[:duration]
     
     device.fade_dimmer(index, val, dur)
   end
@@ -194,10 +194,9 @@ class DimmerCollection < Array
   ## Attempts to return an array of return values
   def method_missing(method, *args)
     return super(method, *args) unless Dimmer.instance_methods.include?(method)
-
+    
     puts "Applying #{method.inspect} to dimmers: #{self}"
     self.collect do |dimmer|
-      puts "-> dimmer.send(#{method.inspect}, #{args.inspect})"
       dimmer && dimmer.send(method, *args)
     end
   end
