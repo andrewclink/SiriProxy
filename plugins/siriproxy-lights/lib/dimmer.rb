@@ -31,7 +31,7 @@ class DimmerDevice
     # @handle.detach_kernel_driver(0)
 
     begin
-      @handle.claim_interface(0)
+      # @handle.claim_interface(0)
     rescue LIBUSB::ERROR_BUSY => e
       puts "Device was busy"
     end

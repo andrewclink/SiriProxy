@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "lib"))
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "..", "lib"))
 require "dimmer"
 
 # Usage: dimmer.rb <set | fade | fade_sw> <index> <value> [duration]
