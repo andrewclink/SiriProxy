@@ -195,7 +195,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     
     puts "Target value: #{target_value}"
     
-    if target_value <= dimmer.value
+    if target_value >= dimmer.value
       target_value = dimmer.value - 10
       puts "Target value too high; adjusting downward: #{target_value}"
     end
