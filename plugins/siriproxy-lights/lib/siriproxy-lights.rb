@@ -410,9 +410,9 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
 
   def handle_lights(state=:on, where)
-    dimmer = dimmer_for(where)
-    if dimmer.nil?
-      say "I don't know about #{where}"
+    dimmers = dimmers_for(where)
+    if dimmers.length < 1
+      say "I don't know about #{where} lights"
       request_completed
       return
     end
@@ -423,19 +423,18 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     else :off
     end
 
-    current = dimmer.state
-    
-    if (state == :on  && current == :on) ||
-       (state == :off && current == :off)
-       
-       say "The lights are already #{state}"
-       request_completed
-       return
-    end
+    # dimmers.each do |dimmer|
+    #   current = dimmer.state
+    # 
+    #   if (state == :on  && current == :on) ||
+    #      (state == :off && current == :off)
+    #    
+    #      say "The #{name} lights are already #{state}"
+    # end
       
     
     # dimmer.value = (onoff == "on" ? 255 : 0)
-    dimmer.fade :value => (state == "on" ? 255 : 0), :duration => 240
+    dimmers.fade :value => (state == "on" ? 255 : 0), :duration => 240
     
     say "Lights #{state}"
     request_completed
