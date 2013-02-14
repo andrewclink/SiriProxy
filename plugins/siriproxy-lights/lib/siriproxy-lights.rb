@@ -334,8 +334,20 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       job_name = "lights_alarm_#{onoff}"
       command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
     else
+      
+      dimmer_index = 1
+      
       job_name = "lights_alarm_#{onoff}"
-      command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
+      
+      args =  []
+      args << "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy"
+      args << "/usr/local/siriproxy/plugins/siriproxy-lights/bin/dim"
+      args << dimmer_index
+      args << "fade"
+      args << (onoff == "on" ? 255 : 0)   # Value
+      args << (onoff == "on" ? 120 * 60 * 30 : 120 * 60 * 5) # duration 30min : 5min
+      
+      command = args.collect(&:to_s).join(" ")
     end
   
     Crontab.Remove(job_name) rescue nil
