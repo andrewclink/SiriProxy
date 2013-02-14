@@ -20,7 +20,6 @@ class DimmerDevice
     
     if @dev.nil?
       puts "Could not find Dimmer device."
-      exit
     end
     
     print @dev.inspect
