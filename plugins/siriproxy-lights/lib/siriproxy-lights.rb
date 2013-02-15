@@ -45,7 +45,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     #ctx.usb_close                 
   end
 
-  AVAILABLE_DIMMERS = "(all|desk|bed ?room)? ?(?:the )?(lamp|lights|light)"
+  AVAILABLE_DIMMERS = "(all|desk|living ?room|bed ?room)? ?(?:the )?(lamp|lights|light)"
 
   def initialize_dimmer
     dev = DimmerDevice.new
@@ -132,7 +132,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  listen_for(/set (?:my|the|our)? ?#{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
+  listen_for(/(?:set|fade|turn) (?:my|the|our)? ?#{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
     value = case percentage
     when /\d+/ then
       value = percentage.to_i / 100.0 * 255.0
@@ -216,8 +216,9 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   
   def dimmer_for(place)
     dimmer = case place
-    when "desk" then desk_lamp
-    when /bed ?room/ then bedroom_lights
+    when /living/     then desk_lamp
+    when /desk/       then desk_lamp
+    when /bed ?room/  then bedroom_lights
     else bedroom_lights
     end
     
@@ -234,6 +235,9 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     when /desk/ then
       dimmers << desk_lamp
     when /bed ?room/ then 
+      dimmers << bedroom_lights
+    when nil then
+      dimmers << desk_lamp
       dimmers << bedroom_lights
     when /all/ then 
       dimmers << desk_lamp
@@ -522,11 +526,11 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
 
-  listen_for(/turn (on|off) (?:my|the|our) (lights|bedroom lights|desk lamp|desk light)/i) do |state, where|
+  listen_for(/turn (on|off) (?:my|the|our) (lights|bedroom ?lights|desk ?lamp|desk ?light)/i) do |state, where|
     handle_lights(state, where)
   end
 
-  listen_for(/turn (?:my|the|our) (lights|bedroom lights|desk lamp|desk light) (on|off)/i) do |where, state|
+  listen_for(/turn (?:my|the|our) (lights|bedroom ?lights|desk ?lamp|desk ?light) (on|off)/i) do |where, state|
     handle_lights(state, where)
   end
 
