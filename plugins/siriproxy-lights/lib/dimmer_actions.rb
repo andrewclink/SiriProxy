@@ -35,9 +35,13 @@ module DimmerActions
     dimmer_names[index] ||= []
     
     exp = name.strip.gsub(/ (light?|lamp?)s?/, "(?:lights?|lamps?)?").gsub(/(\ )/, "#{$1}?")
-    dimmer_names[index] << Regexp.new(exp, Regexp::IGNORECASE)
+    reg = Regexp.new(exp, Regexp::IGNORECASE)
     
-    dimmer_names_did_change
+    if dimmer_names[index].detect {|x| x == reg }.nil?
+      dimmer_names[index] << reg
+    
+      dimmer_names_did_change
+    end
 
     name
   end

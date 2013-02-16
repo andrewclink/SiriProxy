@@ -68,7 +68,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     #ctx.usb_close                 
   end
 
-  AVAILABLE_DIMMERS = '(all|[\w\d][\w\d\ ]+)'
+  AVAILABLE_DIMMERS = '(all|[\w\d][\w\d\ ]+?)'
 
   def initialize_dimmer
     @dimmer_dev = DimmerDevice.new
@@ -167,7 +167,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
 
-  listen_for(/(?:set|fade|turn) (?:my|the|our)? ?#{AVAILABLE_DIMMERS} to (\d+|max|maximum|min|minimum)%/i) do |place, thing, percentage|
+  listen_for(/(?:set|fade|turn) (?:my|the|our)? ?#{AVAILABLE_DIMMERS} to (?:the )?(\d+|max|maximum|min|minimum)%?/i) do |place, percentage|
     value = case percentage
     when /\d+/ then
       value = percentage.to_i / 100.0 * 255.0
