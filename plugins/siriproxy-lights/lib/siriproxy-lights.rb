@@ -68,7 +68,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     #ctx.usb_close                 
   end
 
-  AVAILABLE_DIMMERS = '(all|[\w\d][\w\d\ ]+?)'
+  AVAILABLE_DIMMERS = '(all|[\w\d][\w\d\ ]*)'
 
   def initialize_dimmer
     @dimmer_dev = DimmerDevice.new
@@ -187,7 +187,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     if (dimmers.length > 1)
       say "Fading them to #{percentage}%"
     else
-      say "Fading the #{place} #{thing} to #{percentage}%"
+      say "Fading the #{place} to #{percentage}%"
     end
 
     request_completed
@@ -196,7 +196,6 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   listen_for(/dim (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place, thing|
     dimmers = dimmers_for(place)
-
   
     # Single Dimmer
     #
