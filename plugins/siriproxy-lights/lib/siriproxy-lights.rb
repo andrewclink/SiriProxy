@@ -11,11 +11,26 @@ require 'cronedit'
 require 'dimmer'
 
 #######
-# This is a "hello world" style plugin. It simply intercepts the phrase "test siri proxy" and responds
-# with a message about the proxy being up and running (along with a couple other core features). This
-# is good base code for other plugins.
+# This plugin interfaces between Siri and a USB device to control mains voltages. It can use either an
+# FTDI serial device to bit-bang relays on and off, or a dimmer board that implements digital phase-angle 
+# shifts based on an ATMega8u2 (to my knowledge only one of which exists).
 #
-# Remember to add other plugins to the "config.yml" file if you create them!
+# The FTDI solution simply connects the electromagnet of a relay to one of the bit bang channels. If your
+# relay cannot close with five volts, a transistor and higher voltage (say, 12v) source would be needed. 
+#
+# A quick word if you haven't a ton of experience with clunky, slow relays, an electromagnet is essentially
+# a dead short; use a resistor to limit the current allowed through the coil so that the voltage does 
+# not drop. Your USB bus normally won't have much trouble with 100mA at 5v, so if you can't get the relay 
+# to open with a 50Ω series resistor, you'll need to use a transistor to a higher-voltage source.
+#
+# Work is ongoing to clean up the API and release the schematics and source code for the dimmer board.
+# Essentially, it uses a zero-cross detector to vary the phase angle at which a triac is triggered. Mine
+# currently has 2 channels. Although the firmware supports more, USB communication causes the second channel
+# to flicker momentarily, presumably because the triac is triggered late.
+#
+#
+# No license because Christ would forgive rather than sue anyway.
+# Andrew Clink, Feb 2013
 ######
 
 class SiriProxy::Plugin::Lights < SiriProxy::Plugin
