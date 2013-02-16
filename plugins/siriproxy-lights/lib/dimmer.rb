@@ -68,11 +68,12 @@ class DimmerDevice
   
   def dimmers
     if @dimmers.nil?
-      @dimmers = dimmer_count.times.collect do |i|
+      @dimmers = DimmerCollection.new
+      dimmer_count.times do |i|
         d = Dimmer.new
         d.device = self
         d.index = i
-        d
+        @dimmers << d
       end
     end
     
