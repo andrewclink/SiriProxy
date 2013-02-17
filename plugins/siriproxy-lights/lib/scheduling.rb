@@ -1,4 +1,7 @@
+require 'cronedit'
+
 module Scheduling
+  include CronEdit
 
   def word_to_integer(word)
     result = case word
