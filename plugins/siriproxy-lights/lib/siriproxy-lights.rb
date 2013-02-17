@@ -72,28 +72,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   def initialize_dimmer
     @dimmer_dev = DimmerDevice.new
-  
-    if @dimmer_dev
-      @dimmer_dev.open
-      @desk_lamp      = @dimmer_dev.dimmers[0]
-      @bedroom_lights = @dimmer_dev.dimmers[1]
-    end
-  end
-
-  def desk_lamp
-    if @desk_lamp.nil?
-      initialize_dimmer
-    end
-
-    @desk_lamp
-  end
-
-  def bedroom_lights
-    if @bedroom_lights.nil?
-      initialize_dimmer
-    end
-  
-    @bedroom_lights
+    @dimmer_dev.open if @dimmer_dev
   end
 
   #pragma mark - Lights
@@ -120,7 +99,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
 
-  listen_for(/where is dimmer ([\w\d\ ]+)[\ \?]?/) do |place|
+  listen_for(/what index is the dimmer for ([\w\d\ ]+)[\ \?]?/) do |place|
     dimmer = dimmer_for(place)
     
     if dimmer.nil?
@@ -132,22 +111,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-  # # # # Boolean on/off
-  
-  listen_for(/turn (on|off) (?:my|the|our) ?#{AVAILABLE_DIMMERS}/i) do |state, where|
-    handle_lights(state, where)
-  end
 
-  listen_for(/turn (?:my|the|our) ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
-    handle_lights(state, where)
-  end
-
-  listen_for(/turn (on|off) all the lights?/i) do |state|
-    handle_lights(state, "all")
-  end
-  listen_for(/turn all the lights? (on|off)/i) do |state|
-    handle_lights(state, "all")
-  end
   
   
   # # # #
@@ -367,6 +331,26 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     printf("Negating? %s\n", negate ? "Yes" : "No");
     say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} lights are #{is_on ? 'on' : 'off'}"
     request_completed
+  end
+
+
+  # ====================================
+  # = Boolean On/Off - Lowest Priority =
+  # ====================================
+  
+  listen_for(/turn (on|off) (?:my|the|our) ?#{AVAILABLE_DIMMERS}/i) do |state, where|
+    handle_lights(state, where)
+  end
+
+  listen_for(/turn (?:my|the|our) ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
+    handle_lights(state, where)
+  end
+
+  listen_for(/turn (on|off) all the lights?/i) do |state|
+    handle_lights(state, "all")
+  end
+  listen_for(/turn all the lights? (on|off)/i) do |state|
+    handle_lights(state, "all")
   end
 
 
