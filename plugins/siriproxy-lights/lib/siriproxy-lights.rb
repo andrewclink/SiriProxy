@@ -171,17 +171,17 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
         say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
       end
 
-      request_completed
-      return
+    else
+      # Multiple dimmers
+      #
+      dimmers.each do |dimmer|
+        infer_dim_for dimmer
+      end
+
+      say "Setting the mood"
     end
   
-    # Multiple dimmers
-    #
-    dimmers.each do |dimmer|
-      infer_dim_for dimmer
-    end
 
-    say "Setting the mood"
     request_completed
   end
 
@@ -189,26 +189,29 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   listen_for(/(?:bring|fade)(?: up)? (?:the|my|our)? ?#{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
     dimmers = dimmers_for(place)
   
-  
+    completed = false
+
     if dimmers.length == 1
       if dimmers[0].value >= 255
         say "The #{place} lights are already at 100%"
-        request_completed
-        return
+        completed = true
       end
     end
 
-    dimmers.each do | dimmer |
-      value = case amount
-      when /all/ then 255
-      when /little|bit/ then dimmer.value + 10
-      else dimmer.value + 25
-      end
+    unless completed
+      dimmers.each do | dimmer |
+        value = case amount
+        when /all/ then 255
+        when /little|bit/ then dimmer.value + 10
+        else dimmer.value + 25
+        end
 
-      dimmer.fade(:value => value, :duration => 120) # 1 second
-    end
+        dimmer.fade(:value => value, :duration => 120) # 1 second
+      end
   
-    say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} up a bit"
+      say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} up a bit"
+    end
+
     request_completed
   end
 
@@ -263,32 +266,34 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     jobs = Crontab.List()
     job_def  = jobs["lights_alarm_#{state}"]
 
-
+    
+    entry = nil
     begin
        entry = CronEntry.new(job_def).to_hash
     rescue
       say "The lights aren't scheduled to turn #{state}."
-      request_completed
-      return
+    end
+    
+    ###
+    # Convert time from 24 to 12 hour & determine the period
+    unless entry.nil?
+      hour = entry[:hour].to_i
+      period = "am"
+      if hour == 12
+        period = "pm"
+      elsif hour == 0
+        hour = 12
+        period = "am"
+      elsif hour > 12
+        hour -= 12 
+        period = "pm"
+      end
+  
+      time = sprintf("%d:%02d %s", hour, entry[:minute], period)
+  
+      say "The lights will be turned #{state} at #{time}."
     end
 
-    #
-    # Convert time from 24 to 12 hour & determine the period
-    hour = entry[:hour].to_i
-    period = "am"
-    if hour == 12
-      period = "pm"
-    elsif hour == 0
-      hour = 12
-      period = "am"
-    elsif hour > 12
-      hour -= 12 
-      period = "pm"
-    end
-  
-    time = sprintf("%d:%02d %s", hour, entry[:minute], period)
-  
-    say "The lights will be turned #{state} at #{time}."
     request_completed
   end
   
@@ -297,17 +302,16 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     dimmer = dimmer_for(where)
     if dimmer.nil?
       say "I don't know about #{where}"
-      request_completed
-      return
+    else
+  
+      is_on = dimmer.state == :on || dimmer.state == :faded
+  
+      negate = state == 'off'
+      printf("Negating? %s\n", negate ? "Yes" : "No");
+      say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} lights are #{is_on ? 'on' : 'off'}"
     end
-  
-    is_on = dimmer.state == :on || dimmer.state == :faded
-  
-    negate = state == 'off'
-    printf("Negating? %s\n", negate ? "Yes" : "No");
-    say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} lights are #{is_on ? 'on' : 'off'}"
+
     request_completed
-  
   end
 
 
