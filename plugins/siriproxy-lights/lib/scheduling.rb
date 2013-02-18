@@ -29,7 +29,7 @@ module Scheduling
     return result
   end
 
-  def parse_time(hour, minute, period)
+  def parse_time(hour, minute, period="am")
     now = Time.now
     h = word_to_integer(hour) + (period =~ /pm/ ? 12 : 0)
     m = word_to_integer(minute) 
