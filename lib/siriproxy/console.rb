@@ -43,7 +43,7 @@ class SiriProxy::Console
   def console_exit
     Readline::HISTORY.pop if Readline::HISTORY[Readline::HISTORY.length-1] =~ /exit|quit/
 
-    File.open(history_path, "a") do |f|
+    File.open(history_path, "w") do |f|
       Readline::HISTORY.each do |line|
         f.write line + "\n"
       end

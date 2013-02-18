@@ -304,18 +304,21 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
   
-
+  # Are the x lights on?
   listen_for(/(?:are|is) (?:the|my|our)? ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
     dimmer = dimmer_for(where)
+
     if dimmer.nil?
       say "I don't know about #{where}"
     else
-  
-      is_on = dimmer.state == :on || dimmer.state == :faded
-  
-      negate = state == 'off'
-      printf("Negating? %s\n", negate ? "Yes" : "No");
-      say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} #{where[-1]=='s' ? 'are' : 'is'} #{is_on ? 'on' : 'off'}"
+      
+      if dimmer.state == :faded
+        say "The #{where} #{where[-1]=='s' ? 'are' : 'is'} at #{dimmer.percentage}%"
+      else        
+        is_on  = dimmer.state == :on
+        negate = state == 'off'
+        say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} #{where[-1]=='s' ? 'are' : 'is'} #{is_on ? 'on' : 'off'}"
+      end
     end
 
     request_completed

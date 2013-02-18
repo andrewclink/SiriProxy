@@ -160,6 +160,10 @@ class Dimmer
     device.set_dimmer_value(index, value)
   end
   
+  def percentage
+    (value.to_f / 255.0 * 100).round
+  end
+  
   def fade(args={})
     val = args[:value]
     dur = args[:duration]
@@ -171,7 +175,7 @@ class Dimmer
     current = nil
     if self.value > 200
       current = :on
-    elsif self.value < 100
+    elsif self.value < 1
       current = :off
     else
       current = :faded
