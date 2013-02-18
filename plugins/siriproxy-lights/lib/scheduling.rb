@@ -59,7 +59,6 @@ module Scheduling
       command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
     else
     
-      dimmer_index = 1
       call_before  = (onoff == "on" ? 9 : 5)
     
       args =  []
