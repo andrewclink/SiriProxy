@@ -36,6 +36,10 @@ class SiriProxy::Plugin < Cora::Plugin
     object
   end
 
+  def log(level=1, msg)
+    SiriProxy::logger.log(level, msg)
+  end
+
   class << self
     def filter(class_names, options={}, &block)
       [class_names].flatten.each do |class_name|

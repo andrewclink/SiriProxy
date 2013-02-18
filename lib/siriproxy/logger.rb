@@ -40,10 +40,12 @@ class SiriProxy::Logger
   
   def log_line_header(level)
     case level
-    when 0 then " [Warn]  "
-    when 1 then " [Info]  "
-    when 2 then " [Info]  "
-    when 3 then " [Debug] "
+    when 0      then " [Silent]"
+    when 1      then " [Info]  "
+    when 2      then " [Info]  "
+    when 3      then " [Debug] "
+    when :warn  then " [Warn]  "
+    when :error then " [Error] "
     else        " [DEBUG] "
     end
   end

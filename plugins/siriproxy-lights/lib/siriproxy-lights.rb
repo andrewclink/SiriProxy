@@ -53,7 +53,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
   def initialize_ftdi
-    puts "Initializing FTDI"
+    log 2, "Initializing FTDI"
     begin
       @ftdi = Ftdi::Context.new
       @ftdi.usb_open(0x0403, 0x6001)
@@ -61,7 +61,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
       @ftdi.read_data_chunksize= 1
     rescue Ftdi::StatusCodeError => e
-      puts "Could not initialize FTDI context #{e.inspect}"
+      log :error, "Could not initialize FTDI context #{e.inspect}"
     end
 
     #ctx.set_bitmode(0xff, :reset)                                                                                                                                       
@@ -71,8 +71,13 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   AVAILABLE_DIMMERS = '(all|[\w\d][\w\d\ ]*)'
 
   def initialize_dimmer
+    log 2, "Initializing Dimmer Device"
+
     @dimmer_dev = DimmerDevice.new
-    @dimmer_dev.open if @dimmer_dev
+
+    unless @dimmer_dev.open
+      log :error, "Could not locate dimmer device"
+    end
   end
 
   #pragma mark - Lights
@@ -143,7 +148,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       percentage = "0%"
     else 0
     end
-    puts "Percentage: #{percentage.inspect} -> value"
+    log 2, "Percentage: #{percentage.inspect} -> value"
   
     dimmers = dimmers_for(place)
     dimmers.fade(:value => value.round, :duration => 360) # 3 seconds
@@ -298,7 +303,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
   
 
-  listen_for /(?:are the|is the)( bedroom)? lights? (on|off)/i do |where, state|
+  listen_for(/(?:are|is) (?:the|my|our)? ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
     dimmer = dimmer_for(where)
     if dimmer.nil?
       say "I don't know about #{where}"
@@ -328,7 +333,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
     is_on = (current & mask) == 0 ? false : true
 
-    puts   "mask: #{mask}; is_on: #{is_on}"
+    log 3,   "mask: #{mask}; is_on: #{is_on}"
     printf "The lights are %s\n", is_on ? "On" : "Off"
 
     negate = state == 'off'

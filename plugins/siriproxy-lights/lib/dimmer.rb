@@ -13,14 +13,15 @@ class DimmerDevice
   
   def initialize
     @c = LIBUSB::Context.new
+    self
   end
   
   def open
     @dev = @c.devices(:idVendor=> DEV_VENDOR).first
     
     if @dev.nil?
-      puts "Could not find Dimmer device."
-      return
+      #puts "Could not find Dimmer device."
+      return false
     end
     
     print @dev.inspect
@@ -36,6 +37,7 @@ class DimmerDevice
       puts "Device was busy"
     end
     
+    true
   end
   
   def close
@@ -196,9 +198,9 @@ class DimmerCollection < Array
   def method_missing(method, *args)
     return super(method, *args) unless Dimmer.instance_methods.include?(method)
     
-    puts "Applying #{method.inspect} to dimmers: #{self}"
+#    puts "Applying #{method.inspect} to dimmers: #{self}"
     self.collect do |dimmer|
-      puts "-> dimmer.send(#{method.inspect}, #{args.inspect})"
+#      puts "-> dimmer.send(#{method.inspect}, #{args.inspect})"
       dimmer && dimmer.send(method, *args)
     end
   end

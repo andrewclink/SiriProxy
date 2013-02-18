@@ -60,10 +60,13 @@ class SiriProxy::Console
     prompt = ">> " #Color::Red + ">> " + Color::Reset# + Color::Bold
 
     begin
+      print "\n" # Newline for spacing
       while cmd = Readline.readline(prompt, true) do
         print Color::Reset
         cmd.chomp!
         handle_command(cmd)
+
+        print "\n" # Newline for spacing
       end
     rescue Interrupt
       console_exit
@@ -76,12 +79,16 @@ class SiriProxy::Console
     # this is ugly, but works for now
     SiriProxy::PluginManager.class_eval do
       def respond(text, options={})
-        object = generate_siri_utterance("ref_id", 
-                                          text, 
-                                          (options[:spoken] or text), 
-                                          options[:prompt_for_response] == true)
+
+        if SiriProxy::config.log_level >= 3
+          object = generate_siri_utterance("ref_id", 
+                                            text, 
+                                            (options[:spoken] or text), 
+                                            options[:prompt_for_response] == true)
+          pp object.to_hash 
+        end
+
         log Color::Green + "=>#{text}" + Color::Reset
-        pp object.to_hash if SiriProxy::config.log_level >= 2
       end
       def process(text)
         begin

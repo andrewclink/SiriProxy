@@ -11,17 +11,17 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
   attr_accessor :wants_person, :current_fiber, :firstName, :lastName
   
   def initialize(config)
-    puts "Initializing Lost & Found"
+    log 2, "Initializing Lost & Found"
 
     database_config = YAML::load(File.open(File.join(config['path'], "database.yml")))
     
     database_config.each do |key, value|
-      puts "Checking #{key}"
+      log 3, "Checking #{key}"
       if value["database"]
         
         value["database"] = File.join(config['path'], value["database"])
 
-        puts "-> Found Database #{File.join(Dir.pwd, value["database"])}"
+        log 3, "-> Found Database #{File.join(Dir.pwd, value["database"])}"
 
       end
     end
@@ -34,10 +34,10 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
   end
   
   def load_dependencies
-    puts "-> Loading Models..."
+    log 3, "-> Loading Models..."
 
     Dir["#{File.dirname(__FILE__)}/models/*.rb"].each do |f| 
-      puts "-> Loading #{f}"
+      log 3, "-> Loading #{f}"
       load(f)
     end
   end
@@ -45,12 +45,12 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
   # Notice who we're talking to...
   #
   filter "PersonSearchCompleted" do |object|
-    puts "[Info - PersonSearchCompleted] Object:"
+    log 2, "[Info - PersonSearchCompleted] Object:"
     results = object["properties"]["results"]
     contact = nil
     
     if results.length < 1
-      puts " -> No Results"
+      log :warn, " -> No Results"
     else
       contact = results[0]["properties"]
     end
@@ -58,7 +58,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     ## Log
     fname = contact['firstName']
     lname = contact['lastName']
-    puts "Filter-> Name: #{fname} #{lname} (wants_person = #{@wants_person})"
+    log 2, "Filter-> Name: #{fname} #{lname} (wants_person = #{@wants_person})"
     
     if @wants_person
       @callback.call(contact) rescue nil
@@ -89,7 +89,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     
 
     ## Start PersonSearch
-    puts "-> Sending PersonSearch Request"
+    log 2, "-> Sending PersonSearch Request"
     send_object s, target: :iphone
 
     ## Set Callback
@@ -100,7 +100,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     @callback = Proc.new do |person|
       fname = person['firstName']
       lname = person['lastName']
-      puts "-> Callback: Name: #{fname} #{lname}"
+      log 2, "-> Callback: Name: #{fname} #{lname}"
        @wants_person = false
       f.resume() if f.alive?
     end
@@ -115,7 +115,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     #   end
     # end
 
-    puts "-> Waiting"
+    puts 3, "-> Waiting"
     Fiber.yield
     
     return fname, lname
@@ -219,13 +219,13 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     loc = Location.where(:name => location.strip).first if location.nil?
     if loc.nil?
       loc = Location.new(:name => location.strip, :owner => loc_owner)
-      puts "-> Creating location #{loc.inspect}"
+      puts 2, "-> Creating location #{loc.inspect}"
       loc.save
     end
     
 
     if (thing.stash_at(loc, vicinity))
-      puts "Stashed at: #{thing.most_recent_stashing}"
+      log 2, "Stashed at: #{thing.most_recent_stashing}"
       say "Ok, #{siri_understood_possesive(object_possesive)} #{object} is #{vicinity} the #{location}"
     else
       say "Couldn't stash #{object} #{vicinity} #{location}"
@@ -251,7 +251,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     
     thing = Thing.find_by_name(object)
     if thing.nil? 
-      puts "Thing   : #{thing.inspect} (Searched for name=> #{object})"
+      log 2, "Thing   : #{thing.inspect} (Searched for name=> #{object})"
       say "I don't know about the #{object}"
     else
       
@@ -259,10 +259,10 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
       
       stashing = thing.most_recent_stashing
       
-      puts "Thing   : #{thing.inspect}"
-      puts "Stashing: #{stashing.inspect}"
-      puts "Loc Arcl: #{location_article(stashing, owner) rescue "Exception"}"
-      puts "Location: #{stashing.location.inspect rescue nil}"
+      log 2, "Thing   : #{thing.inspect}"
+      log 2, "Stashing: #{stashing.inspect}"
+      log 2, "Loc Arcl: #{location_article(stashing, owner) rescue "Exception"}"
+      log 2, "Location: #{stashing.location.inspect rescue nil}"
       say "The #{thing.name} is stashed #{stashing.vicinity} #{location_article(stashing, owner)} #{stashing.location.name}"
       
     end
@@ -296,7 +296,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
   end
   
   def locate_thing(posessive, thing_name)
-    puts "-> Searching for '#{thing_name}'"
+    log 2, "-> Searching for '#{thing_name}'"
     
     thing = Thing.find_by_name(thing_name.strip)
 
@@ -309,7 +309,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
     s = thing.most_recent_stashing
     delta = Time.now - s.created_at
 
-    puts "-> Found #{s.inspect}"
+    log 2, "-> Found #{s.inspect}"
 
     owner = fetch_owner
     the = location_article(s, owner)
@@ -336,7 +336,7 @@ class SiriProxy::Plugin::LostFound < SiriProxy::Plugin
 
   
   listen_for /test Stashing/i do 
-    puts Stashing.inspect
+    log 2, Stashing.inspect
     say "Ok."
     request_completed
   end
