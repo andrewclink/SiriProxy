@@ -9,3 +9,7 @@ Gemfile.lock
 *.gem
 .bundle
 pkg/*
+
+*.log
+
+plugins/.AppleDouble/.Parent
