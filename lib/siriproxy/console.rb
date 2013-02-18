@@ -1,3 +1,5 @@
+require 'readline'
+require 'yaml'
 
 class SiriProxy::Console
   
@@ -6,9 +8,17 @@ class SiriProxy::Console
   attr_accessor :plugin_manager
   
   def initialize
+    # Load Logger
     SiriProxy::logger = SiriProxy::Logger.new($STDOUT)
 
+    # Create a plugin manager
     self.plugin_manager = SiriProxy::PluginManager.new
+    
+    # Load Readline history
+    hist = YAML::load_file(File.expand_path("~/.siriproxy_history"))
+    hist.each do |line|
+      Readline::HISTORY.push line
+    end
     
     log "Console Initialized"
   end
@@ -16,25 +26,37 @@ class SiriProxy::Console
   def handle_command(cmd)
     case cmd
     when "exit", "quit"
-      exit
+      console_exit
     else
       plugin_manager.process(cmd)
     end
+  end
+  
+  def console_exit
+    Readline::HISTORY.pop if Readline::HISTORY[Readline::HISTORY.length-1] =~ /exit|quit/
+
+    File.open(File.expand_path("~/.siriproxy_history"), "a") do |f|
+      f.write Readline::HISTORY.to_a.to_yaml
+    end
+    
+    exit(0)
   end
 
   def run
     swizzle_plugin_manager
     swizzle_plugin_class
 
-    repl = -> prompt do
-      print prompt
-      cmd = gets.chomp!
-      print Color::Reset
-      
-      handle_command(cmd)
-    end
+    prompt = ">> " #Color::Red + ">> " + Color::Reset# + Color::Bold
 
-    loop { repl[ Color::Red + ">> " + Color::Reset + Color::Bold] }
+    begin
+      while cmd = Readline.readline(prompt, true) do
+        print Color::Reset
+        cmd.chomp!
+        handle_command(cmd)
+      end
+    rescue Interrupt
+      console_exit
+    end
   end
   
 
