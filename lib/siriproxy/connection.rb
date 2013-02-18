@@ -78,7 +78,7 @@ class SiriProxy::Connection < EventMachine::Connection
     self.unzipped_input << unzip_stream.inflate(self.input_buffer) rescue nil
     self.input_buffer = ""
     SiriProxy::logger.log 5, "========UNZIPPED DATA (from #{self.name} ========="
-    log 5, unzipped_input.to_hex
+    SiriProxy::logger.log 5, unzipped_input.to_hex
     SiriProxy::logger.log 5, "=================================================="
     
     while(self.has_next_object?)
