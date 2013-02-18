@@ -6,17 +6,25 @@ class SiriProxy::Console
   
   attr_accessor :plugin_manager
   
+  def history_path
+    File.expand_path("~/.siriproxy_history")
+  end
+  
   def initialize
     # Load Logger
     SiriProxy::logger = SiriProxy::Logger.new($STDOUT)
 
     # Create a plugin manager
     self.plugin_manager = SiriProxy::PluginManager.new
+    self.plugin_manager.logger = SiriProxy::logger
     
     # Load Readline history
-    File.open(File.expand_path("~/.siriproxy_history"), "r") do |f|
-      while !f.eof?
-        Readline::HISTORY.push f.readline.chomp
+    
+    if File.exists?(history_path)
+      File.open(history_path, "r") do |f|
+        while !f.eof?
+          Readline::HISTORY.push f.readline.chomp
+        end
       end
     end
     
@@ -35,7 +43,7 @@ class SiriProxy::Console
   def console_exit
     Readline::HISTORY.pop if Readline::HISTORY[Readline::HISTORY.length-1] =~ /exit|quit/
 
-    File.open(File.expand_path("~/.siriproxy_history"), "a") do |f|
+    File.open(history_path, "a") do |f|
       Readline::HISTORY.each do |line|
         f.write line + "\n"
       end

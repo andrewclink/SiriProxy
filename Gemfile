@@ -13,7 +13,7 @@ if !File.exists?(SiriProxy::Configuration.config_file)
   exit 1
 end
 
-gem 'cora', '0.0.4'
+gem 'cora', :git => "git://github.com/andrewclink/cora-0.0.4.git"
 
 config = SiriProxy::config
 if config.plugins
