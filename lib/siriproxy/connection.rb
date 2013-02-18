@@ -65,12 +65,12 @@ class SiriProxy::Connection < EventMachine::Connection
   
     if other_connection.ssled
       SiriProxy::logger.log 5, "[Debug - #{self.name}] Forwarding #{self.output_buffer.length} bytes of data to #{other_connection.name}"
-      #puts  self.output_buffer.to_hex if $LOG_LEVEL > 5
+      #puts  self.output_buffer.to_hex if SiriProxy::config.log_level > 5
       other_connection.send_data(output_buffer)
       self.output_buffer = ""
     else
       SiriProxy::logger.log 5, "[Debug - #{self.name}] Buffering some data for later (#{self.output_buffer.length} bytes buffered)"
-      #puts  self.output_buffer.to_hex if $LOG_LEVEL > 5
+      #puts  self.output_buffer.to_hex if SiriProxy::config.log_level > 5
     end
   end
 
@@ -78,7 +78,7 @@ class SiriProxy::Connection < EventMachine::Connection
     self.unzipped_input << unzip_stream.inflate(self.input_buffer) rescue nil
     self.input_buffer = ""
     SiriProxy::logger.log 5, "========UNZIPPED DATA (from #{self.name} ========="
-    puts unzipped_input.to_hex if $LOG_LEVEL > 5
+    log 5, unzipped_input.to_hex
     SiriProxy::logger.log 5, "=================================================="
     
     while(self.has_next_object?)
@@ -171,20 +171,20 @@ class SiriProxy::Connection < EventMachine::Connection
   def prep_received_object(object)
     if object["refId"] == self.last_ref_id && @block_rest_of_session
       SiriProxy::logger.log 1, "[Info - Dropping Object from Guzzoni] #{object["class"]}"
-      pp object if $LOG_LEVEL > 3
+      pp object if SiriProxy::config.log_level > 3
       return nil
     end
   
-    puts "[Info - #{self.name}] Received Object: #{object["class"]}" if $LOG_LEVEL == 1
-    puts "[Info - #{self.name}] Received Object: #{object["class"]} (group: #{object["group"]})" if $LOG_LEVEL == 2
+    SiriProxy::logger.log 2, "[#{self.name}] Received Object: #{object["class"]}"
+    SiriProxy::logger.log 2, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]})"
     SiriProxy::logger.log 2, "[Info - #{self.name}] Received Object: #{object["class"]} (group: #{object["group"]}, ref_id: #{object["refId"]}, ace_id: #{object["aceId"]})"
-    pp object if $LOG_LEVEL > 3
+    pp object if SiriProxy::config.log_level > 3
     
     #keeping this for filters
     new_obj = received_object(object)
     if new_obj == nil 
       SiriProxy::logger.log 1, "[Info - Dropping Object from #{self.name}] #{object["class"]}"
-      pp object if $LOG_LEVEL > 3
+      pp object if SiriProxy::config.log_level > 3
       return nil
     end
 
