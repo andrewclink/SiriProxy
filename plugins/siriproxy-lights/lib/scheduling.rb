@@ -35,36 +35,22 @@ module Scheduling
     m = word_to_integer(minute) 
     Time.new now.year, now.month, now.day, h, m
   end
+  
+  def job_name_for(index, state)
+    "lights_alarm_#{index}_#{onoff}"
+  end
 
-  def schedule_lights(hour, minute_or_period, period, onoff="on")
-    minute = 0
-    if period.nil?
-      if minute_or_period =~ /am|pm/
-        # Didn't give a minute
-        period = minute_or_period
-        minute = 0
-      else
-        # Didn't give a period; must be assumed
-        minute = minute_or_period
-      end
-    else
-      # "five thirty am"
-      # period is set.
-      minute = minute_or_period
-    end
+  def schedule_lights(hour, minute, dimmer_index, onoff="on")
   
     ## Parse time.
-    time = parse_time(hour, minute, period)
+    time = parse_time(hour, minute)
   
-    ## Infer period
-    if period.nil?
-      while time <= Time.now do
-        time = time + (12 * 3600) #Add 12 hours
-      end
+    ## Infer period (am/pm)
+    while time <= Time.now do
+      time = time + (12 * 3600) #Add 12 hours
     end
   
     # schedule
-    job_name = nil
     command  = nil
     call_before = 0
 
@@ -75,9 +61,6 @@ module Scheduling
     
       dimmer_index = 1
       call_before  = (onoff == "on" ? 9 : 5)
-    
-      job_name = "lights_alarm_#{onoff}"
-    
     
       args =  []
       args << "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy"
@@ -90,11 +73,11 @@ module Scheduling
       command = args.collect(&:to_s).join(" ")
     end
 
-    minute = time.min - call_before
-    minute = 0 if minute < 0
+    time = time - (call_before * 60)
 
+    job_name = job_name_for(dimmer_index, state)
     Crontab.Remove(job_name) rescue nil
-    Crontab.Add  job_name, {:minute=>minute, :hour=>time.hour, :command=>command}
+    Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
   
     say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, #{distance_of_time_in_words(Time.now, time)} from now."
     request_completed

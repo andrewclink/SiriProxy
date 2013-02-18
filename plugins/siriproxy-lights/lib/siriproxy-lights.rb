@@ -224,54 +224,70 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   # # # #
 
-  listen_for /turn (on|off) the lights at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |state, hour, minute, period|
-    schedule_lights(hour, minute, period, state)
+  listen_for (/turn (on|off) (?:the|my|our) ?#{AVAILABLE_DIMMERS} at ([1-9]|1[0-2])\:(\d\d)?/i) do |state, where, hour, minute|
+    dimmers_for(where).each do |dimmer|
+      schedule_lights(hour, minute, dimmer.index, state)
+    end
   end
-  listen_for /turn the lights (on|off) at ([1-9]|1[0-2])\:(\d\d)?\s*(am|pm)?/i do |state, hour, minute, period|
-    schedule_lights(hour, minute, period, state)
+
+  listen_for (/turn (?:the|my|our) ?#{AVAILABLE_DIMMERS} (on|off) at ([1-9]|1[0-2])\:(\d\d)?/i) do |where, state, hour, minute|
+    dimmers_for(where).each do |dimmer|
+      schedule_lights(hour, minute, dimmer.index, state)
+    end
   end
 
   # # # #
-  listen_for(/turn (on|off) the lights in (\d+|\w+) minutes/i) do |state, delta|
+  listen_for(/turn (on|off) (?:the|my|our) ?#{AVAILABLE_DIMMERS} in (\d+|\w+) minutes/i) do |state, place, delta|
     time = Time.now + (word_to_integer(delta) * 60)
-    schedule_lights(time.hour, time.min, "am", state) #passing am because time will be in 24 hour time already.
+
+    dimmers_for(place).each do |dimmer|
+      schedule_lights(time.hour, time.min, dimmer.index, state)
+    end
+
   end
-  listen_for(/turn the lights (on|off) in (\d+|\w+) minutes/i) do |state, delta|
+
+  listen_for(/turn (?:the|my|our) ?#{AVAILABLE_DIMMERS} (on|off) in (\d+|\w+) minutes/i) do |place, state, delta|
     time = Time.now + (word_to_integer(delta) * 60)
-    schedule_lights(time.hour, time.min, "am", state) #passing am because time will be in 24 hour time already.
+
+    dimmers_for(place).each do |dimmer|
+      schedule_lights(time.hour, time.min, dimmer.index, state)
+    end
+
   end
 
   # # # #
 
   listen_for(/don't turn the lights (on|off)/i) do |state|
-    job_name = "lights_alarm_#{state}"
-    Crontab.Remove(job_name)
+    job_name = "lights_alarm_1_#{state}"
+    Crontab.Remove(job_name) rescue nil
     say "Ok, I won't turn the lights #{state}"
     request_completed
   end
 
   listen_for(/don't turn (on|off) the lights/i) do |state|
-    job_name = "lights_alarm_#{state}"
-    Crontab.Remove(job_name)
+    job_name = "lights_alarm_1_#{state}"
+    Crontab.Remove(job_name) rescue nil
     say "Ok, I won't be turning #{state} the lights"
     request_completed
   end
 
 
-  ## Not likely to happen, but possible and work fine. ##
-  listen_for /turn the lights on at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
-    schedule_lights(hour, minute_or_period, period)
-  end
-
-  listen_for /turn on the lights at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
-    schedule_lights(hour, minute_or_period, period)
-  end
+  ## Not likely to happen, but possible and worked fine before multiple channels. ##
+  # listen_for /turn the lights on at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
+  #   schedule_lights(hour, minute_or_period, period)
+  # end
+  # 
+  # listen_for /turn on the lights at (\w+)\s*(\w+)?\s*(am|pm)?/i do |hour, minute_or_period, period|
+  #   schedule_lights(hour, minute_or_period, period)
+  # end
   #######################################################
 
   
-  listen_for(/when will the lights turn (on|off)/i) do |state|
+  listen_for(/when will (?:the|my|our) ?#{AVAILABLE_DIMMERS} turn (on|off)/i) do |where, state|
     jobs = Crontab.List()
-    job_def  = jobs["lights_alarm_#{state}"]
+    
+    dimmer = dimmer_for(where)
+    job_def  = jobs[job_name_for(dimmer.index, state)]
 
     
     entry = nil
@@ -303,7 +319,37 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
     request_completed
   end
+
+
+
+
+
   
+
+
+
+
+
+
+  # ====================================
+  # = Boolean On/Off - Lowest Priority =
+  # ====================================
+  
+  listen_for(/turn (on|off) (?:my|the|our) ?#{AVAILABLE_DIMMERS}/i) do |state, where|
+    handle_lights(state, where)
+  end
+
+  listen_for(/turn (?:my|the|our) ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
+    handle_lights(state, where)
+  end
+
+  listen_for(/turn (on|off) all the lights?/i) do |state|
+    handle_lights(state, "all")
+  end
+  listen_for(/turn all the lights? (on|off)/i) do |state|
+    handle_lights(state, "all")
+  end
+
   # Are the x lights on?
   listen_for(/(?:are|is) (?:the|my|our)? ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
     dimmer = dimmer_for(where)
@@ -346,28 +392,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} lights are #{is_on ? 'on' : 'off'}"
     request_completed
   end
-
-
-  # ====================================
-  # = Boolean On/Off - Lowest Priority =
-  # ====================================
   
-  listen_for(/turn (on|off) (?:my|the|our) ?#{AVAILABLE_DIMMERS}/i) do |state, where|
-    handle_lights(state, where)
-  end
-
-  listen_for(/turn (?:my|the|our) ?#{AVAILABLE_DIMMERS} (on|off)/i) do |where, state|
-    handle_lights(state, where)
-  end
-
-  listen_for(/turn (on|off) all the lights?/i) do |state|
-    handle_lights(state, "all")
-  end
-  listen_for(/turn all the lights? (on|off)/i) do |state|
-    handle_lights(state, "all")
-  end
-
-
+  
   ####
 
 
