@@ -9,7 +9,6 @@ Gemfile.lock
 *.gem
 .bundle
 pkg/*
-
 *.log
-
-plugins/.AppleDouble/.Parent
+*.sqlite3
+*.AppleDouble
