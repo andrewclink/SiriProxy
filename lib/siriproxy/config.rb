@@ -26,15 +26,16 @@ class SiriProxy::Configuration < OpenStruct
     end
   end
   
-  # Which file was used?
-  # This allows an option to be passed in to determine where to find the config file
-  #
-  attr_accessor :config_file
     
   def initialize(config_path=nil)
-    self.config_file = self.class.config_file if config_path.nil?
+    # Which file was used?
+    # This allows an option to be passed in to determine where to find the config file
+    #
+    config_file = self.class.config_file if config_path.nil?
 
     config = {
+      :config_file       => config_file,
+      :config_dir        => File.dirname(config_file),
       :fork              => true, # Only server forks, but it does so by default
       :cmdline_log_level => 0,    # Finds its way to log_level for console
     }.merge(YAML.load_file(self.class.config_file))
