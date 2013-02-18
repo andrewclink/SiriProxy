@@ -75,7 +75,7 @@ module Scheduling
 
     time = time - (call_before * 60)
 
-    job_name = job_name_for(dimmer_index, state)
+    job_name = job_name_for(dimmer_index, onoff)
     Crontab.Remove(job_name) rescue nil
     Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
   
