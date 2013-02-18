@@ -3,10 +3,11 @@ require 'yaml'
 require 'ostruct'
 
 # Load Configuration/Cert locations
-load File.dirname(__FILE__) + "/config.rb"
-load File.dirname(__FILE__) + "/color.rb"
+require 'siriproxy/config'
+require 'siriproxy/color'
 
 class SiriProxy::CommandLine
+    
   BANNER = <<-EOS
 Siri Proxy is a proxy server for Apple's Siri "assistant." The idea is to allow for the creation of custom handlers for different actions. This can allow developers to easily add functionality to Siri.
 
@@ -164,30 +165,18 @@ Options:
   end
 
   private
-  
-  def load_config
-    config_path = File.expand_path(SiriProxy::CONFIG_FILE)
-    unless File.exists?(config_path)
-      raise LoadError.new("Configuration missing - Please create either ~/.siriproxy or /etc/siriproxy.d")
-    end
-
-    $APP_CONFIG = OpenStruct.new(YAML.load_file(config_path))
     
-  end
-  
   def parse_options
-    load_config
-    
     @branch = nil
     @option_parser = OptionParser.new do |opts|
       opts.on('-L', '--listen ADDRESS',     '[server]   address to listen on (central or node)') do |listen|
-        $APP_CONFIG.listen = listen
+        SiriProxy.config.listen = listen
       end
       opts.on('-p', '--port PORT',     '[server]   port number for server (central or node)') do |port_num|
-        $APP_CONFIG.port = port_num
+        SiriProxy.config.port = port_num
       end
       opts.on('-l', '--log LOG_LEVEL', '[server]   The level of debug information displayed (higher is more)') do |log_level|
-        $APP_CONFIG.log_level = log_level
+        SiriProxy.config.log_level = log_level
       end
       opts.on('-b', '--branch BRANCH', '[update]   Choose the branch to update from (default: master)') do |branch|
         @branch = branch
@@ -195,6 +184,9 @@ Options:
       opts.on('-n', '--name CA_NAME',  '[gencerts] Define a common name for the CA (default: "SiriProxyCA")') do |ca_name|
         @ca_name = ca_name
       end 
+      opts.on('-f', '--foreground', "[server]   Don't fork") do
+        SiriProxy.config.fork = false
+      end
       opts.on_tail('-v', '--version',  '           show version') do
         require "siriproxy/version"
         puts "SiriProxy version #{SiriProxy::VERSION}"

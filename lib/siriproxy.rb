@@ -12,19 +12,24 @@ class SiriProxy
 
   class << self
     def start
+      
+      if SiriProxy::config.fork
+        
+        # Ruby 1.8 compatible daemonize
+        exit if fork
+        Process.setsid
+        exit if fork
 
-      exit if fork
-      Process.setsid
-      exit if fork
+        write_pid(Process.pid)
 
-      write_pid(Process.pid)
-
-      puts "Child pid: #{Process.pid}"
-      puts "Logging to #{($APP_CONFIG.log_file || "/dev/null")}"
-
-      STDIN.reopen  "/dev/null"
-      STDOUT.reopen ($APP_CONFIG.log_file || "/dev/null"), "a" 
-      STDERR.reopen ($APP_CONFIG.log_file || "/dev/null"), "a"
+        puts "Child pid: #{Process.pid}"
+        puts "Logging to #{(SiriProxy::config.log_file || "/dev/null")}"
+        
+        # Reopen Logs
+        STDIN.reopen  "/dev/null"
+        STDOUT.reopen (SiriProxy::config.log_file || "/dev/null"), "a" 
+        STDERR.reopen (SiriProxy::config.log_file || "/dev/null"), "a"
+      end
 
       puts "[====== #{Time.now} Starting Server ======]"
 
@@ -33,7 +38,7 @@ class SiriProxy
     end
 
     def stop
-      puts "Stopping Echo Server"
+      puts "Stopping Server"
 
       pid = get_child_pid
       if pid.nil?
@@ -105,11 +110,11 @@ class SiriProxy
 
   def initialize()
     # @todo shouldnt need this, make centralize logging instead
-    $LOG_LEVEL = $APP_CONFIG.log_level.to_i
+    $LOG_LEVEL = SiriProxy::config.log_level.to_i
     EventMachine.run do
       begin
-        listen = $APP_CONFIG.listen || '127.0.0.1'
-        port   = $APP_CONFIG.port   || 443
+        listen = SiriProxy::config.listen || '127.0.0.1'
+        port   = SiriProxy::config.port   || 443
 
         puts "Starting SiriProxy on #{listen}:#{port}.."
 
@@ -123,7 +128,7 @@ class SiriProxy
 
       rescue RuntimeError => err
         if err.message == "no acceptor"
-          raise "Cannot start the server on port #{$APP_CONFIG.port} - are you root, or have another process on this port already?"
+          raise "Cannot start the server on port #{SiriProxy::config.port} - are you root, or have another process on this port already?"
         else
           raise
         end
