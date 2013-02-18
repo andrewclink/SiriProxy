@@ -37,7 +37,7 @@ module Scheduling
   end
   
   def job_name_for(index, state)
-    "lights_alarm_#{index}_#{onoff}"
+    "lights_alarm_#{index}_#{state}"
   end
 
   def schedule_lights(hour, minute, dimmer_index, onoff="on")
