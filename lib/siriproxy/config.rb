@@ -35,7 +35,8 @@ class SiriProxy::Configuration < OpenStruct
     self.config_file = self.class.config_file if config_path.nil?
 
     config = {
-      :fork => true
+      :fork              => true, # Only server forks, but it does so by default
+      :cmdline_log_level => 0,    # Finds its way to log_level for console
     }.merge(YAML.load_file(self.class.config_file))
     
     super(config)
@@ -46,7 +47,7 @@ class SiriProxy::Configuration < OpenStruct
     File.expand_path(File.join(File.dirname(__FILE__),"..","..","plugins"))
   end
   
-  def to_s
-    "#<#{self.class}:#{self.id} file=#{config_file}>"
-  end
+  # def to_s
+  #   "#<#{self.class}:#{self.id} file=#{config_file}>"
+  # end
 end

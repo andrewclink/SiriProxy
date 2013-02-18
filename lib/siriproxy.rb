@@ -11,7 +11,16 @@ end
 class SiriProxy
 
   class << self
+    
+    def log(level=1, msg)
+      SiriProxy::logger.log(level, msg)
+    end
+    
     def start
+      # Setup Loger
+      SiriProxy::config.log_file = STDOUT if false == SiriProxy::config.fork
+      SiriProxy::logger = SiriProxy::Logger.new(SiriProxy::config.log_file)
+      log "Logging to #{(SiriProxy::config.log_file || "/dev/null")}"
       
       if SiriProxy::config.fork
         
@@ -22,9 +31,8 @@ class SiriProxy
 
         write_pid(Process.pid)
 
-        puts "Child pid: #{Process.pid}"
-        puts "Logging to #{(SiriProxy::config.log_file || "/dev/null")}"
-        
+        log "Child pid: #{Process.pid}"
+
         # Reopen Logs
         STDIN.reopen  "/dev/null"
         STDOUT.reopen (SiriProxy::config.log_file || "/dev/null"), "a" 
@@ -109,22 +117,20 @@ class SiriProxy
   end
 
   def initialize()
-    # @todo shouldnt need this, make centralize logging instead
-    $LOG_LEVEL = SiriProxy::config.log_level.to_i
     EventMachine.run do
       begin
         listen = SiriProxy::config.listen || '127.0.0.1'
         port   = SiriProxy::config.port   || 443
 
-        puts "Starting SiriProxy on #{listen}:#{port}.."
+        log "Starting SiriProxy on #{listen}:#{port}.."
 
         EventMachine::start_server(listen, port, SiriProxy::Connection::Iphone) { |conn|
-          $stderr.puts "start conn #{conn.inspect}"
+          log 3, "start conn #{conn.inspect}"
           conn.plugin_manager = SiriProxy::PluginManager.new()
           conn.plugin_manager.iphone_conn = conn
         }
 
-        puts "SiriProxy up and running."
+        log "SiriProxy up and running."
 
       rescue RuntimeError => err
         if err.message == "no acceptor"
@@ -136,4 +142,8 @@ class SiriProxy
     end  
   end
 
+  def log(level=1, msg)
+    @logger.log(level, msg) unless @logger.nil?
+  end
+  
 end

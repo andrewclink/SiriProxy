@@ -50,8 +50,8 @@ class SiriProxy::PluginManager < Cora
     begin
       result = super(text)
     rescue Exception => e
-      log "Exception: #{e.inspect}"
-      log e.backtrace
+      log :error, "Exception: #{e.inspect}"
+      log 1, e.backtrace
       return nil
     end
     
@@ -61,7 +61,7 @@ class SiriProxy::PluginManager < Cora
   end
 
   def send_request_complete_to_iphone
-    log "Sending Request Completed"
+    log 2, "Sending Request Completed"
     object = generate_request_completed(self.guzzoni_conn.last_ref_id)
     self.guzzoni_conn.inject_object_to_output_stream(object)
   end
@@ -72,9 +72,5 @@ class SiriProxy::PluginManager < Cora
 
   def no_matches
     return false
-  end
-
-  def log(text)
-    puts "[Info - Plugin Manager] #{text}" if $LOG_LEVEL >= 1
   end
 end

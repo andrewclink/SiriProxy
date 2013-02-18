@@ -45,54 +45,10 @@ Options:
 
   def run_console
     load_code
-    $LOG_LEVEL = 2
-    # this is ugly, but works for now
-    SiriProxy::PluginManager.class_eval do
-      def respond(text, options={})
-        object = generate_siri_utterance("ref_id", 
-                                          text, 
-                                          (options[:spoken] or text), 
-                                          options[:prompt_for_response] == true)
-        puts Color::Green + "=>#{text}" + Color::Reset
-        puts "-> Object:"
-
-        pp object.to_hash
-      end
-      def process(text)
-        begin
-          result = super(text)
-        rescue Exception => e
-          puts "Exception: #{e.inspect}"
-          puts "Backtrace: #{e.backtrace.join("\n")}"
-          return "Exception: #{e.inspect}"
-        end
-
-        result 
-      end
-      def send_request_complete_to_iphone
-        puts "-> Request Complete"
-      end
-      def no_matches
-        puts "No plugin responded"
-      end
-    end
-    SiriProxy::Plugin.class_eval do
-      def last_ref_id
-        0
-      end
-      def send_object(object, options={:target => :iphone})
-        if object.is_a?(String)
-          puts "=> #{object}"
-        else
-          pp object.to_hash
-        end
-          
-      end
-    end
-
-    cora = SiriProxy::PluginManager.new
-    repl = -> prompt { print prompt; cora.process(gets.chomp!) }
-    loop { repl[ Color::Red + ">> " + Color::Reset] }
+    require 'siriproxy/console'
+    
+    console = SiriProxy::Console.new
+    console.run
   end
 
   def run_bundle(subcommand='')
@@ -102,8 +58,6 @@ Options:
 
   def run_server(subcommand='start')
     load_code
-    # @todo: support for forking server into bg and start/stop/restart
-    # subcommand ||= 'start'
     case subcommand
     when 'start'    then start_server
     when 'stop'     then stop_server
@@ -176,7 +130,7 @@ Options:
         SiriProxy.config.port = port_num
       end
       opts.on('-l', '--log LOG_LEVEL', '[server]   The level of debug information displayed (higher is more)') do |log_level|
-        SiriProxy.config.log_level = log_level
+        SiriProxy.config.log_level         = log_level.to_i
       end
       opts.on('-b', '--branch BRANCH', '[update]   Choose the branch to update from (default: master)') do |branch|
         @branch = branch
@@ -198,6 +152,7 @@ Options:
   end
 
   def setup_bundler_path
+    ## Should RVM be integrated here?
     require 'pathname'
     ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../../../Gemfile",
       Pathname.new(__FILE__).realpath)
@@ -210,6 +165,8 @@ Options:
     require 'bundler/setup'
 
     require 'siriproxy'
+    require 'siriproxy/logger'
+    
     require 'siriproxy/connection'
     require 'siriproxy/connection/iphone'
     require 'siriproxy/connection/guzzoni'
