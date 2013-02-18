@@ -83,6 +83,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   #pragma mark - Lights
 
   listen_for /test lights/i do
+    response = "Lights available: "
+    response << dimmer_names.collect(&:first).join("+ ")
     say "Lights available: desk lamp, bedroom lights."
     request_completed
   end
@@ -313,7 +315,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   
       negate = state == 'off'
       printf("Negating? %s\n", negate ? "Yes" : "No");
-      say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} lights are #{is_on ? 'on' : 'off'}"
+      say "#{negate ? (is_on ? 'No' : 'Yes') : (is_on ? 'Yes' : 'No')}, the #{where} #{where[-1]=='s' ? 'are' : 'is'} #{is_on ? 'on' : 'off'}"
     end
 
     request_completed
