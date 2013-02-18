@@ -1,5 +1,4 @@
 require 'readline'
-require 'yaml'
 
 class SiriProxy::Console
   
@@ -15,9 +14,10 @@ class SiriProxy::Console
     self.plugin_manager = SiriProxy::PluginManager.new
     
     # Load Readline history
-    hist = YAML::load_file(File.expand_path("~/.siriproxy_history"))
-    hist.each do |line|
-      Readline::HISTORY.push line
+    File.open(File.expand_path("~/.siriproxy_history"), "r") do |f|
+      while !f.eof?
+        Readline::HISTORY.push f.readline.chomp
+      end
     end
     
     log "Console Initialized"
@@ -36,9 +36,12 @@ class SiriProxy::Console
     Readline::HISTORY.pop if Readline::HISTORY[Readline::HISTORY.length-1] =~ /exit|quit/
 
     File.open(File.expand_path("~/.siriproxy_history"), "a") do |f|
-      f.write Readline::HISTORY.to_a.to_yaml
+      Readline::HISTORY.each do |line|
+        f.write line + "\n"
+      end
     end
     
+    print "\n"
     exit(0)
   end
 
