@@ -18,7 +18,8 @@ class DimmerDevice
   end
   
   def open
-    @dev = @c.devices(:idVendor=> DEV_VENDOR).first
+    @dev = @c.devices(:idVendor=> DEV_VENDOR_ID,
+                      :idProduct => DEV_DEVICE_ID).first
     
     if @dev.nil?
       #puts "Could not find Dimmer device."
