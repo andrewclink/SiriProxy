@@ -2,6 +2,14 @@ require 'cronedit'
 
 module Scheduling
   include CronEdit
+  
+  def schedule_fade_on_duration
+    30 * 60
+  end
+
+  def schedule_fade_off_duration
+    20 * 60
+  end
 
   def word_to_integer(word)
     result = case word
@@ -59,7 +67,7 @@ module Scheduling
       command = "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy /home/andrew/Software/lights/lights #{onoff}"
     else
     
-      call_before  = (onoff == "on" ? 9 : 5)
+      call_before  = (onoff == "on" ? schedule_fade_on_duration : schedule_fade_off_duration) - (5 * 60) # Overlap by 5 minutes
     
       args =  []
       args << "/usr/local/rvm/bin/ruby-1.9.3-p374@SiriProxy"
@@ -67,7 +75,7 @@ module Scheduling
       args << "fade"
       args << dimmer_index
       args << (onoff == "on" ? 255 : 0)   # Value
-      args << (onoff == "on" ? 120 * 60 * 9 : 120 * 60 * 5) # duration 9min : 5min
+      args << call_before * 120 # Units are 120Hz ticks
     
       command = args.collect(&:to_s).join(" ")
     end

@@ -128,13 +128,13 @@ class DimmerDevice
   # args: 
   #   index: the index of the dimmer to fade
   #   value: the 8-bit brightness of the dimmer
-  #   duration: a 32-bit unsigned integer corresponding to 120Hz ticks.
+  #   duration: a 32-bit unsigned integer corresponding to 120Hz ticks, of which 24 bits are useful (maximum 38 hour fade)
   #
   def fade_dimmer(index, value, duration)
     
     value = 255 if value > 255
     duration = 0 if duration < 0
-    duration = 0xffffFFFF if duration > 0xffffFFFF
+    duration = 0x00ffFFFF if duration > 0x00ffFFFF 
     
     begin
       raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
