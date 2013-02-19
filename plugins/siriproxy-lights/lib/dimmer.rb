@@ -1,6 +1,7 @@
 require 'libusb'
 
-DEV_VENDOR = 0x03eb
+DEV_VENDOR_ID     = 0x6666 #Prototype Vendor ID
+DEV_DEVICE_ID     = 0xd144 #Dimm
 
 DIMMER_CMD_COUNT  = 1
 DIMMER_CMD_GET    = 2
@@ -122,12 +123,18 @@ class DimmerDevice
   end
 
   
+  # Fade a dimmer.
+  # args: 
+  #   index: the index of the dimmer to fade
+  #   value: the 8-bit brightness of the dimmer
+  #   duration: a 32-bit unsigned integer corresponding to 120Hz ticks.
+  #
   def fade_dimmer(index, value, duration)
     
-      if value > 255
-      value = 255
-    end
-
+    value = 255 if value > 255
+    duration = 0 if duration < 0
+    duration = 0xffffFFFF if duration > 0xffffFFFF
+    
     begin
       raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
 
@@ -135,7 +142,7 @@ class DimmerDevice
                                                :bRequest => DIMMER_CMD_FADE, 
                                                :wValue => value,
                                                :wIndex => index,
-                                               :dataOut => [duration].pack("S"))
+                                               :dataOut => [duration].pack("L"))
     rescue Exception => e
       puts "Exception: #{e.inspect}"
       return false
