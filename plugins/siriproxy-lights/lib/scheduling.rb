@@ -40,7 +40,8 @@ module Scheduling
   def parse_time(hour, minute, period="am")
     now = Time.now
     h = word_to_integer(hour) + (period =~ /pm/ ? 12 : 0)
-    m = word_to_integer(minute) 
+    m = word_to_integer(minute)
+    puts "Hour #{h} Minute: #{m}"
     Time.new now.year, now.month, now.day, h, m
   end
   
@@ -53,9 +54,13 @@ module Scheduling
     ## Parse time.
     time = parse_time(hour, minute)
   
+    log 2, "Parsed Time: #{time}"
+  
     ## Infer period (am/pm)
     while time <= Time.now do
       time = time + (12 * 3600) #Add 12 hours
+      log 2, "Time is in past, adding 12hrs"
+      log 2, "-> Time is now #{time}"
     end
   
     # schedule
@@ -80,13 +85,17 @@ module Scheduling
       command = args.collect(&:to_s).join(" ")
     end
 
-    time = time - (call_before * 60)
+    log 2, "Subtracting call ahead time (#{call_before})"
+    finish_time = time
+    time = time - call_before 
+    time += Time.now - time if time < Time.now
+    log 2, "-> Time is now #{time}"
 
     job_name = job_name_for(dimmer_index, onoff)
     Crontab.Remove(job_name) rescue nil
     Crontab.Add  job_name, {:minute=>time.min, :hour=>time.hour, :command=>command}
   
-    say "Ok, I'll turn #{onoff} the lights at #{time.strftime("%I:%M %P")}, #{distance_of_time_in_words(Time.now, time)} from now."
+    say "Ok, I'll turn #{onoff} the lights at #{finish_time.strftime("%I:%M %P")}, #{distance_of_time_in_words(Time.now, finish_time)} from now."
     request_completed
   end
 end

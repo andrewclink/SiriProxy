@@ -224,6 +224,11 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   # # # #
 
+  listen_for (/test turn (on|off) (?:the|my|our) ?#{AVAILABLE_DIMMERS} at ([1-9]|1[0-2])\:(\d\d)?/i) do |state, where, hour, minute|
+    schedule_lights(hour, minute, 0, state)
+  end
+
+
   listen_for (/turn (on|off) (?:the|my|our) ?#{AVAILABLE_DIMMERS} at ([1-9]|1[0-2])\:(\d\d)?/i) do |state, where, hour, minute|
     dimmers_for(where).each do |dimmer|
       schedule_lights(hour, minute, dimmer.index, state)
