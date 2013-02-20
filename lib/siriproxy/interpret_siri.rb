@@ -33,7 +33,7 @@ class SiriProxy::Interpret
       return nil if object == nil
       return nil if (!(object["class"] == "SpeechRecognized") rescue true)
       phrase = ""
-      
+            
       object["properties"]["recognition"]["properties"]["phrases"].map { |phraseObj| 
         phraseObj["properties"]["interpretations"].first["properties"]["tokens"].map { |token|
           tokenProps = token["properties"]

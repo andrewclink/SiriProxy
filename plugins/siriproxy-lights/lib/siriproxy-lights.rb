@@ -44,10 +44,11 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   include CronEdit
 
-  attr_accessor :wants_person, :current_fiber, :firstName, :lastName
+  attr_accessor :last_command
 
   def initialize(config)
-    #if you have custom configuration options, process them here!
+    @last_command = nil
+
     initialize_ftdi
     initialize_dimmer
   end
@@ -79,6 +80,13 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       log :error, "Could not locate dimmer device"
     end
   end
+  
+  #pragma mark - Accessors
+  
+  def last_command=(cmd_struct)
+    @last_command = cmd_struct
+    manager.set_priority_plugin(self)
+  end
 
   #pragma mark - Lights
 
@@ -90,7 +98,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
   # # # # 
-
+  
   listen_for(/how many lights are there/i) do
     count = @dimmer_dev.dimmer_count
     say "#{count} dimmer#{count == 0 || count > 1 ? "s" : ""} total"
@@ -119,6 +127,25 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
   
 
+  # # # #
+  
+  listen_for(/a little more/i) do
+    log 2, "Last Command: #{last_command.inspect}"
+    command = self.last_command.command rescue nil
+
+    case command
+    when :dim then
+      say "Dimming a bit more"
+      infer_dim_for last_command.dimmers
+    when :undim then
+      say "Raising them a bit more"
+      infer_undim_for last_command.dimmers
+    else
+      say "A little more what?"
+    end      
+
+    request_completed
+  end
   
   
   # # # #
@@ -152,8 +179,14 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     end
     log 2, "Percentage: #{percentage.inspect} -> value"
   
+    
     dimmers = dimmers_for(place)
     dimmers.fade(:value => value.round, :duration => 360) # 3 seconds
+
+    ## Set state for "a little more"
+    original_value= dimmers.average_value
+    self.last_command = OpenStruct.new({:dimmers => dimmers, :command => (value > original_value ? :undim : :dim)})
+
 
     if (dimmers.length > 1)
       say "Fading them to #{percentage}%"
@@ -165,12 +198,15 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
 
-  listen_for(/dim (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place, thing|
+  listen_for(/dim (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place|
     dimmers = dimmers_for(place)
   
     # Single Dimmer
     #
-    if dimmers.length == 1
+    if dimmers.all?(&:nil?) || dimmers.length < 1
+      say "#{place}? I've never heard of it."
+      
+    elsif dimmers.length == 1
       if dimmers[0].value < 5
         say "The #{place} lights are already down all the way."
       else
@@ -188,12 +224,14 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       say "Setting the mood"
     end
   
+    self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :dim})
+    
 
     request_completed
   end
 
 
-  listen_for(/(?:bring|fade)(?: up)? (?:the|my|our)? ?#{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
+  listen_for(/(?:raise|bring|fade)(?: up)? (?:the|my|our)? ?#{AVAILABLE_DIMMERS}(?: up)? ?(all the way|a little|a bit)?/i) do |place, thing, amount|
     dimmers = dimmers_for(place)
   
     completed = false
@@ -203,6 +241,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
         say "The #{place} lights are already at 100%"
         completed = true
       end
+      self.last_command = nil
     end
 
     unless completed
@@ -217,6 +256,9 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       end
   
       say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} up a bit"
+
+      self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :undim})
+      
     end
 
     request_completed

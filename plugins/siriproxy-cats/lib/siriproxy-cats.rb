@@ -47,16 +47,16 @@ class SiriProxy::Plugin::Cats < SiriProxy::Plugin
 
   listen_for /feed (?:my|the|our) cat(:?s?)(:?\,? please)?/i do
     say "Ok, I'll feed the cats for you."
-    send_food(2)
+    send_food(1)
     request_completed
   end
   
-  listen_for /give (?:my|the|our) cat(?:[\''s]+?) a?\s*(tiny|little|lot)(?: amount)? of food(?:\,? please)?/i do |amount|
+  listen_for /give (?:my|the|our) cat(?:[\''s]+?) a?\s*(little bit|lot|ton) of food(?:\,? please)?/i do |amount|
     speed = case amount
-    when /tiny/   then 1
-    when /little/ then 2
-    when /lot/    then 3
-    else 5
+    when /little/   then 1
+    when /lot/      then 2
+    when /ton/      then 3
+    else 1
     end
     
     say "Ok, I'll give them a #{amount} bit of food."
@@ -209,7 +209,7 @@ class SiriProxy::Plugin::Cats < SiriProxy::Plugin
     object = SiriAddViews.new
     object.make_root(last_ref_id)
 
-    answer = SiriAnswer.new("Tweet", [
+    answer = SiriAnswer.new("Answer", [
       SiriAnswerLine.new("Text Here")
     ])
     
@@ -232,17 +232,17 @@ class SiriProxy::Plugin::Cats < SiriProxy::Plugin
     return object  
   end
 
-  listen_for /show camera/i do
+  listen_for(/show camera/i) do
     send_object get_show_camera_object(1235)
     request_completed
   end
 
-  listen_for /could I see the(?: cat\'?s)? food(?: bowl)?(?: please)?/i do
+  listen_for(/could I see the(?: cat\'?s)? food(?: bowl)?(?: please)?/i) do
     send_object get_show_camera_object(1235)
     request_completed
   end
 
-  listen_for /show me(?: the)?(?: cat\'?s)? food(?: bowl)?/i do
+  listen_for(/show me(?: the)?(?: cat\'?s)? food(?: bowl)?/i) do
     show_camera(1235)
     request_completed
   end

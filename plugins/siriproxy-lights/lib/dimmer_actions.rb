@@ -92,7 +92,10 @@ module DimmerActions
     dimmers
   end
 
-  def infer_dim_for(dimmer)
+  def infer_dim_for(dimmers)
+    
+    return if dimmers.nil?
+    
     target_value = case Time.now.hour
     when 0..6    then 95
     when 7..9    then 110
@@ -106,14 +109,26 @@ module DimmerActions
   
     puts "Target value: #{target_value}"
   
-    if target_value >= dimmer.value
-      target_value = dimmer.value - 10
-      puts "Target value too high; adjusting downward: #{target_value}"
+    if dimmers.is_a?(Dimmer)
+      dimmers = DimmerCollection.new(dimmers)
     end
-  
-    dimmer.fade(:value => target_value, :duration => 360) # 3 seconds
+
+    _target_value = 0
+    dimmers.each do |dimmer|
+      _target_value = target_value
+      if _target_value >= dimmer.value
+        _target_value = dimmer.average_value - 10
+        puts "Target value too high; adjusting downward: #{target_value}"
+      end
+      
+      dimmer.fade(:value => _target_value, :duration => 360) # 3 seconds
+    end
+
   end
   
+  def infer_undim_for(dimmers)
+    dimmers.fade(:value => dimmers.value + 25, :duration => 120)
+  end
   
   def handle_lights(state=:on, where)
     dimmers = dimmers_for(where)

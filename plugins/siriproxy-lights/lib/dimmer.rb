@@ -60,7 +60,7 @@ class DimmerDevice
         # puts "Len: #{len.inspect}"
         # puts "Err: #{err.inspect}"
       rescue Exception => e
-        puts "Exception: #{e.inspect}"
+        puts "dimmer_count failed with exception: #{e.inspect}"
         return 0
       end
       
@@ -85,16 +85,16 @@ class DimmerDevice
   end
   
   def dimmer_value(index)
-    begin
-      raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
+    raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
 
+    begin
       val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_IN | REQUEST_TYPE_CLASS | RECIPIENT_DEVICE, 
                                                :bRequest => DIMMER_CMD_GET, 
                                                :wValue => 0x0, 
                                                :wIndex => index, 
                                                :dataIn => 2)
     rescue Exception => e
-      puts "Exception: #{e.inspect}"
+      puts "dimmer_value failed with exception: #{e.inspect}"
       return -1
     end
     
@@ -116,7 +116,7 @@ class DimmerDevice
                                                :wValue => value,
                                                :wIndex => index)
     rescue Exception => e
-      puts "Exception: #{e.inspect}"
+      puts "set_dimmer_value failed with exception: #{e.inspect}"
       return false
     end
     
@@ -201,9 +201,17 @@ end
 
 class DimmerCollection < Array
 
+  def initialize(*args)
+    self.concat(args)
+  end
+
   ## Returns average value
-  def average_value
+  def value
     self.inject(0) {|sum, dimmer| sum + dimmer.value }.to_f / self.count
+  end
+  
+  def values
+    self.collect(&:value)
   end
 
   ## Attempts to return an array of return values

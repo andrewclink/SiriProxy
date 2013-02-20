@@ -145,7 +145,7 @@ class SiriProxy::Connection < EventMachine::Connection
       self.last_ref_id = object["refId"] 
     end
     
-    SiriProxy::logger.log 1, "[Info - Forwarding object to #{self.other_connection.name}] #{object["class"]}"
+    SiriProxy::logger.log 2, "[Forwarding object to #{self.other_connection.name}] #{object["class"]}"
     
     object_data = object.to_plist(:plist_format => CFPropertyList::List::FORMAT_BINARY)
 
@@ -170,20 +170,20 @@ class SiriProxy::Connection < EventMachine::Connection
   
   def prep_received_object(object)
     if object["refId"] == self.last_ref_id && @block_rest_of_session
-      SiriProxy::logger.log 1, "[Info - Dropping Object from Guzzoni] #{object["class"]}"
+      SiriProxy::logger.log 2, "[Dropping Object from Guzzoni] #{object["class"]}"
       pp object if SiriProxy::config.log_level > 3
       return nil
     end
   
     SiriProxy::logger.log 2, "[#{self.name}] Received Object: #{object["class"]}"
-    SiriProxy::logger.log 2, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]})"
-    SiriProxy::logger.log 2, "[Info - #{self.name}] Received Object: #{object["class"]} (group: #{object["group"]}, ref_id: #{object["refId"]}, ace_id: #{object["aceId"]})"
+    SiriProxy::logger.log 3, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]})"
+    SiriProxy::logger.log 4, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]}, ref_id: #{object["refId"]}, ace_id: #{object["aceId"]})"
     pp object if SiriProxy::config.log_level > 3
     
     #keeping this for filters
     new_obj = received_object(object)
     if new_obj == nil 
-      SiriProxy::logger.log 1, "[Info - Dropping Object from #{self.name}] #{object["class"]}"
+      SiriProxy::logger.log 2, "[Dropping Object from #{self.name}] #{object["class"]}"
       pp object if SiriProxy::config.log_level > 3
       return nil
     end
@@ -205,7 +205,6 @@ class SiriProxy::Connection < EventMachine::Connection
   
   #Stub -- override in subclass
   def received_object(object)
-    
     object
   end 
 

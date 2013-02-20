@@ -25,8 +25,8 @@ class SiriProxy::PluginManager < Cora
           @plugins << plugin
       end
     end
-    log "Plugins loaded: "
-    plugins.each{|p| log "-> #{p.class.name}" }
+    log 2, "Plugins loaded: "
+    plugins.each{|p| log "-> #{p.class.name}" } if SiriProxy::config.log_level >= 2
   end
 
   def process_filters(object, direction)

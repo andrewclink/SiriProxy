@@ -65,6 +65,8 @@ class SiriProxy::Console
         print Color::Reset
         cmd.chomp!
         handle_command(cmd)
+        
+        Readline::HISTORY.pop if Readline::HISTORY[Readline::HISTORY.count-1] == cmd
 
         print "\n" # Newline for spacing
       end
