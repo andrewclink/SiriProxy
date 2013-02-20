@@ -220,10 +220,10 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
         request_completed
         self.last_command = nil
       else
-        say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
+        say "Ok, turning #{place =~ /s$/ ? "them" : "it"} down a bit"
         request_completed
 
-        infer_dim_for dimmers[0]
+        infer_dim_for dimmers
         self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :dim})
       end
 
@@ -233,9 +233,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
       say "Setting the mood"
       request_completed
       
-      dimmers.each do |dimmer|
-        infer_dim_for dimmer
-      end
+      infer_dim_for dimmers
 
       self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :dim})
     end
