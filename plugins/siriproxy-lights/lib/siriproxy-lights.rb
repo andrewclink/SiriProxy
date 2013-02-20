@@ -197,7 +197,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     dimmers.fade(:value => value.round, :duration => 360) # 3 seconds
 
     ## Set state for "a little more"
-    original_value= dimmers.average_value
+    original_value= dimmers.value
     self.last_command = OpenStruct.new({:dimmers => dimmers, :command => (value > original_value ? :undim : :dim)})
 
     true

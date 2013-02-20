@@ -117,7 +117,7 @@ module DimmerActions
     dimmers.each do |dimmer|
       _target_value = target_value
       if _target_value >= dimmer.value
-        _target_value = dimmer.average_value - 10
+        _target_value = dimmer.value - 10
         puts "Target value too high; adjusting downward: #{target_value}"
       end
       
