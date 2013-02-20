@@ -64,12 +64,12 @@ class SiriProxy::Connection < EventMachine::Connection
     return if output_buffer.empty?
   
     if other_connection.ssled
-      SiriProxy::logger.log 5, "[Debug - #{self.name}] Forwarding #{self.output_buffer.length} bytes of data to #{other_connection.name}"
+      SiriProxy::logger.log 5, "[#{self.name}] Forwarding #{self.output_buffer.length} bytes of data to #{other_connection.name}"
       #puts  self.output_buffer.to_hex if SiriProxy::config.log_level > 5
       other_connection.send_data(output_buffer)
       self.output_buffer = ""
     else
-      SiriProxy::logger.log 5, "[Debug - #{self.name}] Buffering some data for later (#{self.output_buffer.length} bytes buffered)"
+      SiriProxy::logger.log 5, "[#{self.name}] Buffering some data for later (#{self.output_buffer.length} bytes buffered)"
       #puts  self.output_buffer.to_hex if SiriProxy::config.log_level > 5
     end
   end
@@ -145,7 +145,7 @@ class SiriProxy::Connection < EventMachine::Connection
       self.last_ref_id = object["refId"] 
     end
     
-    SiriProxy::logger.log 2, "[Forwarding object to #{self.other_connection.name}] #{object["class"]}"
+    SiriProxy::logger.log 3, "[Forwarding object to #{self.other_connection.name}] #{object["class"]}"
     
     object_data = object.to_plist(:plist_format => CFPropertyList::List::FORMAT_BINARY)
 
@@ -175,10 +175,10 @@ class SiriProxy::Connection < EventMachine::Connection
       return nil
     end
   
-    SiriProxy::logger.log 2, "[#{self.name}] Received Object: #{object["class"]}"
-    SiriProxy::logger.log 3, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]})"
-    SiriProxy::logger.log 4, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]}, ref_id: #{object["refId"]}, ace_id: #{object["aceId"]})"
-    pp object if SiriProxy::config.log_level > 3
+    SiriProxy::logger.log 3, "[#{self.name}] Received Object: #{object["class"]}"
+    SiriProxy::logger.log 4, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]})"
+    SiriProxy::logger.log 5, "[#{self.name}] Received Object: #{object["class"]} (group: #{object["group"]}, ref_id: #{object["refId"]}, ace_id: #{object["aceId"]})"
+    pp object if SiriProxy::config.log_level >= 5
     
     #keeping this for filters
     new_obj = received_object(object)

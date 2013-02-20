@@ -65,6 +65,7 @@ class SiriProxy::PluginManager < Cora
     log 2, "Sending Request Completed"
     object = generate_request_completed(self.guzzoni_conn.last_ref_id)
     self.guzzoni_conn.inject_object_to_output_stream(object)
+    self.guzzoni_conn.block_rest_of_session
   end
 
   def respond(text, options={})

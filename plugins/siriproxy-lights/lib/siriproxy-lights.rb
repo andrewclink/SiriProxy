@@ -44,7 +44,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   include CronEdit
 
-  attr_accessor :last_command
+  attr_reader :last_command
 
   def initialize(config)
     @last_command = nil
@@ -188,6 +188,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     else
       say "Fading the #{place} to #{percentage}%"
     end
+    request_completed
     
     
     dimmers.fade(:value => value.round, :duration => 360) # 3 seconds
@@ -196,8 +197,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     original_value= dimmers.average_value
     self.last_command = OpenStruct.new({:dimmers => dimmers, :command => (value > original_value ? :undim : :dim)})
 
-
-    request_completed
+    true
   end
 
 
