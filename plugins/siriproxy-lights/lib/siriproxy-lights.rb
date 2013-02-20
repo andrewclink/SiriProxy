@@ -44,8 +44,6 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   include CronEdit
 
-  attr_reader :last_command
-
   def initialize(config)
     @last_command = nil
 
@@ -82,6 +80,11 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
   
   #pragma mark - Accessors
+  
+  def last_command
+    @last_command
+  end
+  
   
   def last_command=(cmd_struct)
     log 2, "Setting last command: #{cmd_struct.inspect}"
@@ -208,29 +211,34 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     #
     if dimmers.all?(&:nil?) || dimmers.length < 1
       say "#{place}? I've never heard of it."
+      self.last_command = nil
+      request_completed
       
     elsif dimmers.length == 1
       if dimmers[0].value < 5
         say "The #{place} lights are already down all the way."
+        request_completed
+        self.last_command = nil
       else
-        infer_dim_for dimmers[0]
         say "Ok, turning #{thing =~ /s$/ ? "them" : "it"} down a bit"
+        request_completed
+
+        infer_dim_for dimmers[0]
+        self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :dim})
       end
 
     else
       # Multiple dimmers
       #
+      say "Setting the mood"
+      request_completed
+      
       dimmers.each do |dimmer|
         infer_dim_for dimmer
       end
 
-      say "Setting the mood"
+      self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :dim})
     end
-  
-    self.last_command = OpenStruct.new({:dimmers => dimmers, :command => :dim})
-    
-
-    request_completed
   end
 
 
@@ -242,9 +250,9 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     if dimmers.length == 1
       if dimmers[0].value >= 255
         say "The #{place} lights are already at 100%"
+        self.last_command = nil
         completed = true
       end
-      self.last_command = nil
     end
 
     unless completed
