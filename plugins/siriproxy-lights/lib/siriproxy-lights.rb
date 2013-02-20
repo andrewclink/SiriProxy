@@ -204,7 +204,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   end
 
 
-  listen_for(/dim (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place|
+  listen_for(/dim|lower (?:the|my|our)? ?#{AVAILABLE_DIMMERS}/i) do |place|
     dimmers = dimmers_for(place)
   
     # Single Dimmer
