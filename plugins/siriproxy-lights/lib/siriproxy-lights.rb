@@ -84,6 +84,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   #pragma mark - Accessors
   
   def last_command=(cmd_struct)
+    log 2, "Setting last command: #{cmd_struct.inspect}"
+    
     @last_command = cmd_struct
     manager.set_priority_plugin(self)
   end
@@ -181,18 +183,19 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   
     
     dimmers = dimmers_for(place)
+    if (dimmers.length > 1)
+      say "Fading them to #{percentage}%"
+    else
+      say "Fading the #{place} to #{percentage}%"
+    end
+    
+    
     dimmers.fade(:value => value.round, :duration => 360) # 3 seconds
 
     ## Set state for "a little more"
     original_value= dimmers.average_value
     self.last_command = OpenStruct.new({:dimmers => dimmers, :command => (value > original_value ? :undim : :dim)})
 
-
-    if (dimmers.length > 1)
-      say "Fading them to #{percentage}%"
-    else
-      say "Fading the #{place} to #{percentage}%"
-    end
 
     request_completed
   end
