@@ -130,16 +130,16 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
   # # # #
   
   listen_for(/a little more/i) do
-    log 2, "Last Command: #{last_command.inspect}"
+    log 2, "Last Command: #{self.last_command.inspect}"
     command = self.last_command.command rescue nil
 
     case command
     when :dim then
       say "Dimming a bit more"
-      infer_dim_for last_command.dimmers
+      infer_dim_for self.last_command.dimmers
     when :undim then
       say "Raising them a bit more"
-      infer_undim_for last_command.dimmers
+      infer_undim_for self.last_command.dimmers
     else
       say "A little more what?"
     end      
