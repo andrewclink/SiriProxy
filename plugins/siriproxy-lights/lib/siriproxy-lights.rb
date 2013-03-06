@@ -97,8 +97,8 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
 
   listen_for /test lights/i do
     response = "Lights available: "
-    response << dimmer_names.collect(&:first).join("+ ")
-    say "Lights available: desk lamp, bedroom lights."
+    response << dimmer_names.collect(&:first).join(", ")
+    say response
     request_completed
   end
 
@@ -119,7 +119,7 @@ class SiriProxy::Plugin::Lights < SiriProxy::Plugin
     request_completed
   end
 
-  listen_for(/what index is the dimmer for ([\w\d\ ]+)[\ \?]?/) do |place|
+  listen_for(/what index is the dimmer for ([\w\d\ ]+)/) do |place|
     dimmer = dimmer_for(place)
     
     if dimmer.nil?
