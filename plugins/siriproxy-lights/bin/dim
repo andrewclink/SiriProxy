@@ -9,11 +9,12 @@ index = ARGV[1].to_i || 0
 
 device = DimmerDevice.new
 device.open
-# puts "Found #{device.dimmer_count} dimmers"
-# puts "-> #{device.dimmers.inspect}"
+puts "Found #{device.dimmer_count} dimmers"
+puts "-> #{device.dimmers.inspect}"
 
 dimmer = device.dimmers[index]
-puts "Dimmer: #{dimmer || "Not Found"}"
+# puts "Dimmer: #{dimmer || "Not Found"}"
+puts "Dimmer not found" if dimmer.nil?
 exit 1 if dimmer.nil?
 
 if cmd =~ /set/
@@ -46,10 +47,10 @@ if cmd =~ /fade/
   value = ARGV[2].to_i
   duration = ARGV[3].to_i
   
-  puts "Fading to: #{value} over #{duration} ticks"
+  # puts "Fading to: #{value} over #{duration} ticks"
   
   dimmer.fade(:value => value, :duration => duration)
 
-  puts "Dimmer: #{dimmer}"
+  puts "Dimmer: #{dimmer.value}"
   device.close
 end

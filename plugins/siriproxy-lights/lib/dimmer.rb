@@ -3,10 +3,10 @@ require 'libusb'
 DEV_VENDOR_ID     = 0x6666 #Prototype Vendor ID
 DEV_DEVICE_ID     = 0xd144 #Dimm
 
-DIMMER_CMD_COUNT  = 1
-DIMMER_CMD_GET    = 2
-DIMMER_CMD_SET    = 3
-DIMMER_CMD_FADE   = 4
+DIMMER_CMD_COUNT  = 0x21
+DIMMER_CMD_GET    = 0x22
+DIMMER_CMD_SET    = 0x23
+DIMMER_CMD_FADE   = 0x24
 
 class DimmerDevice
   
@@ -51,7 +51,7 @@ class DimmerDevice
   def dimmer_count
     if @dimmer_count.nil?
       begin
-        val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_IN | REQUEST_TYPE_CLASS | RECIPIENT_DEVICE, 
+        val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_IN | REQUEST_TYPE_VENDOR | RECIPIENT_DEVICE, 
                                                  :bRequest => DIMMER_CMD_COUNT, 
                                                  :wValue => 0x0, 
                                                  :wIndex => 0x0000, 
@@ -61,6 +61,7 @@ class DimmerDevice
         # puts "Err: #{err.inspect}"
       rescue Exception => e
         puts "dimmer_count failed with exception: #{e.inspect}"
+        raise e
         return 0
       end
       
@@ -88,7 +89,7 @@ class DimmerDevice
     raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
 
     begin
-      val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_IN | REQUEST_TYPE_CLASS | RECIPIENT_DEVICE, 
+      val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_IN | REQUEST_TYPE_VENDOR | RECIPIENT_DEVICE, 
                                                :bRequest => DIMMER_CMD_GET, 
                                                :wValue => 0x0, 
                                                :wIndex => index, 
@@ -111,7 +112,7 @@ class DimmerDevice
     begin
       raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
       
-      val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_OUT | REQUEST_TYPE_CLASS | RECIPIENT_DEVICE, 
+      val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_OUT | REQUEST_TYPE_VENDOR | RECIPIENT_DEVICE, 
                                                :bRequest => DIMMER_CMD_SET, 
                                                :wValue => value,
                                                :wIndex => index)
@@ -139,11 +140,12 @@ class DimmerDevice
     begin
       raise ArgumentError.new("Index beyond bounds") if (index > dimmer_count)
 
-      val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_OUT | REQUEST_TYPE_CLASS | RECIPIENT_DEVICE, 
+      data_out = [duration].pack("L")
+      val, len, err = @handle.control_transfer(:bmRequestType => ENDPOINT_OUT | REQUEST_TYPE_VENDOR | RECIPIENT_DEVICE, 
                                                :bRequest => DIMMER_CMD_FADE, 
                                                :wValue => value,
                                                :wIndex => index,
-                                               :dataOut => [duration].pack("L"))
+                                               :dataOut => data_out)
     rescue Exception => e
       puts "Exception: #{e.inspect}"
       return false
