@@ -30,13 +30,18 @@ class DimmerDevice
     print "\n"
     @dev.interfaces.each {|i| printf("\t-> #{i.inspect}\n")}
     
-    @handle = @dev.open
-    # @handle.detach_kernel_driver(0)
-
     begin
+      @handle = @dev.open
+      # @handle.detach_kernel_driver(0)
       # @handle.claim_interface(0)
+    rescue LIBUSB::ERROR_ACCESS
+      puts "Couldn't open device - do you have permissions?"
+      @handle = nil
+      
     rescue LIBUSB::ERROR_BUSY => e
       puts "Device was busy"
+      @handle = nil
+      
     end
     
     true
