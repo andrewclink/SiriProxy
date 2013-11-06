@@ -11,10 +11,125 @@ end
 
 class SiriProxy
 
+  class << self
+    
+    def start
+      puts "--- start ---"
+      proxy = self.new
+      puts "Created proxy: #{proxy.inspect}; starting"
+      proxy.start()
+    end
+  
+    def stop
+      puts "--- stop ---"
+      pid = get_child_pid
+      if pid.nil?
+        puts "Server not running."
+        Process.exit(1)
+      end
+
+      File.unlink("/var/run/siriproxy.pid") rescue nil
+      File.unlink("/var/tmp/siriproxy.pid") rescue nil
+
+      puts "Killing server #{pid}"
+      Process.kill("HUP", pid)
+    end
+    
+    def restart
+      stop
+      start
+    end
+    
+  
+    def process_exists?(pid)
+      begin
+        Process.getpgid( pid )
+        true
+      rescue Errno::ESRCH
+        false
+      end
+    end
+      
+    def write_pid(pid)
+      f = nil
+      pidfile1 = "/var/run/siriproxy.pid"
+      pidfile2 = "/var/tmp/siriproxy.pid"
+
+      if File.exists?(pidfile1)
+        raise "Server Already Running" if process_exists?(File.read(pidfile1).to_i)
+        File.unlink(pidfile1)
+      elsif File.exists?(pidfile2)
+        raise "Server Already Running" if process_exists?(File.read(pidfile2).to_i)
+        File.unlink(pidfile2)
+      end
+
+      begin
+        f = File.open(pidfile1, "w")
+        f.write("#{pid}")
+      rescue
+        # Didn't have permissions to write to /var/run
+        f = File.open(pidfile2, "w")
+        f.write("#{pid}")
+      ensure
+        f.close rescue nil
+      end
+    end
+  
+  
+    def get_child_pid
+      f = nil
+      pid = nil
+
+      f = File.open("/var/run/siriproxy.pid", "r") rescue nil
+      f = File.open("/var/tmp/siriproxy.pid", "r") rescue nil if f.nil?
+
+      pid = f.read().to_i unless f.nil?
+      pid
+    end
+  end
+
   def initialize()
+    puts "--- SiriProxy#initialize ---"
     # @todo shouldnt need this, make centralize logging instead
     $LOG_LEVEL = SiriProxy.config.log_level.to_i
+  end
+  
+  def do_fork
 
+    # Ruby 1.8 compatible daemonize
+    exit if fork
+    Process.setsid
+    exit if fork
+
+    self.class.write_pid(Process.pid)
+
+    puts "Child pid: #{Process.pid}"
+
+    # Reopen Logs
+    STDIN.reopen  "/dev/null"
+    STDOUT.reopen (SiriProxy::config.log_file || "/dev/null"), "a" 
+    STDERR.reopen (SiriProxy::config.log_file || "/dev/null"), "a"
+
+  end
+  
+  def start
+    ## Go into the background if appropriate
+    do_fork if SiriProxy.config.fork
+
+    ## Start DNS Server if appropriate
+    if SiriProxy.config.server_ip
+      puts "Starting DNS Server"
+      require 'siriproxy/dns'
+      dns_server = SiriProxy::Dns.new
+      dns_server.start()
+    end
+
+    ## Everything's bootstrapped; start the EM reactor
+    start_server
+    
+  end
+
+  def start_server
     EventMachine.run do
       if Process.uid == 0 && !SiriProxy.config.user
         puts "[Notice - Server] ======================= WARNING: Running as root ============================="
@@ -57,4 +172,6 @@ class SiriProxy
     end
   end
 
+
+  
 end

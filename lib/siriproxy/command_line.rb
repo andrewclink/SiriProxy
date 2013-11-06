@@ -80,26 +80,26 @@ Options:
   end
 
   def run_server(subcommand='start')
-    load_code
-    init_plugins
-    start_server
-    # @todo: support for forking server into bg and start/stop/restart
-    # subcommand ||= 'start'
-    # case subcommand
-    # when 'start'    then start_server
-    # when 'stop'     then stop_server
-    # when 'restart'  then restart_server
-    # end
-  end
+    puts "--- run_server ---"
+    require 'siriproxy'
 
-  def start_server
-    if SiriProxy.config.server_ip
-      require 'siriproxy/dns'
-      dns_server = SiriProxy::Dns.new
-      dns_server.start()
+    case subcommand
+    when 'start'
+      load_code
+      init_plugins
+      SiriProxy::start
+    when 'stop'     
+      SiriProxy::stop
+    when 'restart'  
+      load_code
+      init_plugins
+      SiriProxy::restart
     end
-    proxy = SiriProxy.new
-    proxy.start()
+  end
+  
+  def stop_server
+    puts "Stopping Server"
+    SiriProxy::stop()
   end
 
   def gen_config
@@ -185,6 +185,9 @@ Options:
       opts.on('-n', '--name CA_NAME',    '[gencerts]    Define a common name for the CA (default: "SiriProxyCA")') do |ca_name|
         @ca_name = ca_name
       end 
+      opts.on('-f', '--foreground',      "[server]   Don't fork into the background") do
+        SiriProxy.config.fork = false
+      end
       opts.on_tail('-v', '--version',  '              Show version') do
         require "siriproxy/version"
         puts "SiriProxy version #{SiriProxy::VERSION}"

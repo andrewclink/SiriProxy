@@ -20,8 +20,9 @@ class SiriProxy::Configuration
     File.join('/', 'etc', 'siriproxy.d')
   ]
 
-
-
+  DEFAULTS = {
+    :fork              => true, # Only server command forks, but it does so by default
+  }
 
   def initialize
     @config_loaded = false
@@ -67,7 +68,11 @@ class SiriProxy::Configuration
   end    
   
   def load_configuration
-    @config = OpenStruct.new(YAML.load_file(File.expand_path(config_file))) 
+    @config = OpenStruct.new(
+      SiriProxy::Configuration::DEFAULTS.merge(
+        YAML.load_file(File.expand_path(config_file))
+      )
+    )
   end
   
   def method_missing(selector, *args)  
